@@ -1,0 +1,5937 @@
+directive @accessibleIf(cond: String, restrictEvenAdmins: Boolean) on FIELD_DEFINITION
+
+directive @action(resource: String, requires: [String!], audit: Boolean) on FIELD_DEFINITION
+
+directive @audit on FIELD_DEFINITION
+
+directive @constraints(min: Int, max: Int, pattern: String) on INPUT_FIELD_DEFINITION | FIELD_DEFINITION
+
+directive @hidden(attr: String!) on INPUT_OBJECT
+
+directive @ignore on OBJECT | INTERFACE
+
+directive @internal(method: String!) on OBJECT | INTERFACE
+
+directive @resource(name: String) on OBJECT
+
+"""prevents inner structs' fields from being validated"""
+directive @unvalidated on INPUT_FIELD_DEFINITION | FIELD_DEFINITION
+
+type AccessToken {
+  createdAt: DateTime!
+  createdBy: User!
+  emails: [String!]!
+  id: ID!
+  lastAccessedAt: DateTime
+  projects: [Project!]!
+  revokedAt: DateTime
+  token: String!
+  type: AccessTokenType!
+  view: View!
+}
+
+enum AccessTokenType {
+  PUBLIC
+  RESTRICTED
+  INDIVIDUAL_SHARING
+}
+
+input AckJobSetItemInput {
+  agentId: ID!
+  jobSetId: ID!
+  jobSetItemId: ID!
+  runName: String!
+}
+
+type AckJobSetItemPayload {
+  success: Boolean!
+}
+
+input AckRunQueueItemInput {
+  clientMutationId: String
+  runName: String!
+  runQueueItemId: ID!
+}
+
+type AckRunQueueItemPayload {
+  clientMutationId: String
+  success: Boolean
+}
+
+type ActiveExperiment implements Node {
+  activeVariants: [ActiveVariant!]!
+  endAt: DateTime
+  experimentType: ExperimentType!
+  id: ID!
+  name: String!
+  startAt: DateTime
+}
+
+type ActiveVariant {
+  allocation: Int!
+  bucket: Int!
+}
+
+interface ActivityDuration {
+  """start time for activity"""
+  endAt: DateTime!
+  startAt: DateTime!
+}
+
+input AddAliasesInput {
+  aliases: [ArtifactCollectionAliasInput!]!
+  artifactID: ID!
+  clientMutationId: String
+}
+
+type AddAliasesPayload {
+  aliases: [ArtifactCollectionAlias!]!
+  artifact: Artifact!
+  clientMutationId: String
+  success: Boolean!
+}
+
+input AddFilesInput {
+  bucketName: String
+  clientMutationId: String
+  description: String
+  entityName: String
+  modelName: String!
+  names: [String]!
+}
+
+type AddFilesPayload {
+  clientMutationId: String
+  files(after: String, before: String, first: Int, last: Int): FileConnection
+}
+
+input AddProtectedAliasesInput {
+  adminType: WorkflowsAdminType!
+  aliases: [String!]!
+  clientMutationID: String
+  entityName: String!
+}
+
+type AddProtectedAliasesPayload {
+  aliases: [String!]!
+  clientMutationID: String
+}
+
+input AddRolePermissionsInput {
+  permissions: [String!]!
+  roleID: ID!
+}
+
+type AddRolePermissionsPayload {
+  success: Boolean!
+}
+
+input AddUserToOrganizationInput {
+  clientMutationId: String
+  organizationId: ID!
+  teams: [String!]
+  userName: String!
+  userOrgRole: String!
+}
+
+type AddUserToOrganizationPayload {
+  clientMutationId: String
+  emailSent: Boolean!
+  success: Boolean!
+}
+
+input AddWorkflowsAdminInput {
+  adminType: WorkflowsAdminType!
+  clientMutationID: String
+  entityName: String!
+  userID: ID
+  username: String
+}
+
+type AddWorkflowsAdminPayload {
+  clientMutationID: String
+  success: Boolean!
+}
+
+type Agent implements Node {
+  createdAt: DateTime!
+  displayName: String
+  heartbeatAt: DateTime
+
+  """TODO: enum?"""
+  host: String!
+  id: ID!
+  metrics: JSONString!
+  name: String!
+  persistent: Boolean
+  runs(after: String, before: String, first: Int, last: Int, order: String): RunConnection!
+  state: String
+
+  """TODO: non-null?"""
+  sweep: Sweep!
+  totalRuns: Int!
+  user: User
+}
+
+type AgentConnection {
+  edges: [AgentEdge!]!
+  pageInfo: PageInfo!
+}
+
+type AgentEdge {
+  cursor: String!
+  node: Agent!
+}
+
+input AgentHeartbeatInput {
+  clientMutationId: String
+  id: ID!
+  metrics: JSONString
+  runState: JSONString
+}
+
+type AgentHeartbeatPayload {
+  agent: Agent
+  clientMutationId: String
+  commands: JSONString
+}
+
+enum Aggregation {
+  MAX
+  MIN
+  AVERAGE
+  SUM
+  COUNT
+}
+
+input AggregationKey {
+  aggregation: Aggregation!
+  key: String!
+}
+
+type Alert {
+  condition: AlertCondition!
+  events(after: String, before: String, first: Int, from: DateTime!, last: Int, order: String, to: DateTime): AlertEventConnection!
+  id: ID!
+  subscriptions: [AlertSubscription!]!
+}
+
+union AlertCondition = FinishedRunCondition | StoppedRunCondition | ScriptableRunCondition
+
+type AlertEvent {
+  createdAt: DateTime!
+  id: ID!
+}
+
+type AlertEventConnection {
+  edges: [AlertEventEdge!]!
+  pageInfo: PageInfo!
+}
+
+type AlertEventEdge {
+  cursor: String!
+  node: AlertEvent
+}
+
+enum AlertSeverity {
+  INFO
+  WARN
+  ERROR
+}
+
+interface AlertSubscription {
+  id: ID!
+}
+
+type ApiKey {
+  description: String
+  id: ID!
+  ips: [String!]!
+  name: String!
+  rateLimit: String
+  user: User
+}
+
+type ApiKeyConnection {
+  edges: [ApiKeyEdge!]!
+  pageInfo: PageInfo!
+}
+
+type ApiKeyEdge {
+  cursor: String!
+  node: ApiKey
+}
+
+type Artifact {
+  aliases(artifactCollectionName: String): [ArtifactAlias!]!
+  artifactActions(after: String, before: String, first: Int, last: Int): ArtifactActionConnection @deprecated
+  artifactCollections: ArtifactCollectionConnection!
+  artifactLineageDag(baseGraphNodeIDs: [String!], clusterSize: Int, directLineage: Boolean, filterGeneratedArtifacts: Boolean!, limit: Int!, traversalDirection: TraversalDirection): ArtifactLineageDag
+  artifactMemberships: ArtifactCollectionMembershipConnection!
+  artifactSequence: ArtifactSequence!
+  artifactType: ArtifactType!
+  commitHash(artifactCollectionName: String): String
+  createdAt: DateTime!
+  createdBy: Initiator
+  currentManifest: ArtifactManifest
+  dependencyOf(after: String, before: String, first: Int, last: Int): ArtifactConnection!
+  dependsOn(after: String, before: String, first: Int, last: Int): ArtifactConnection!
+  description: String
+  digest: String!
+  fileCount: Int64!
+  files(after: String, before: String, contentType: [String!], first: Int, last: Int, names: [String!]): FileConnection!
+  historyStep: Int64
+  id: ID!
+  isGenerated: Boolean!
+  isLinkedToGlobalRegistry: Boolean!
+  labels: JSONString @deprecated
+  metadata: JSONString
+  size: Int64!
+  state: ArtifactState!
+  storageBytes: Int64!
+  tags: [Tag!]!
+  ttlDurationSeconds: Int64!
+  ttlIsInherited: Boolean!
+  updatedAt: DateTime
+  usedBy(after: String, before: String, filters: JSONString, first: Int, last: Int, order: String): RunConnection!
+  usedCount: Int!
+  versionIndex(artifactCollectionName: String): Int
+}
+
+interface ArtifactAction {
+  artifact: Artifact!
+  createdAt: DateTime!
+  id: ID!
+  initiator: Initiator!
+}
+
+type ArtifactActionConnection {
+  edges: [ArtifactActionEdge!]!
+  pageInfo: PageInfo!
+}
+
+type ArtifactActionEdge {
+  cursor: String!
+  node: ArtifactAction!
+}
+
+type ArtifactAlias {
+  alias: String!
+  artifact: Artifact
+  artifactCollection: ArtifactCollection
+  artifactCollectionName: String!
+  id: ID!
+}
+
+type ArtifactAliasAction {
+  actionType: String!
+  alias: String!
+  artifactCollection: ArtifactCollection!
+  createdAt: DateTime!
+  sourceArtifact: Artifact
+  targetArtifact: Artifact
+  user: User
+}
+
+type ArtifactAliasActionConnection {
+  edges: [ArtifactAliasActionEdge!]!
+  pageInfo: PageInfo!
+}
+
+type ArtifactAliasActionEdge {
+  cursor: String!
+  node: ArtifactAliasAction!
+}
+
+type ArtifactAliasConnection {
+  edges: [ArtifactAliasEdge!]!
+  pageInfo: PageInfo!
+}
+
+type ArtifactAliasEdge {
+  cursor: String!
+  node: ArtifactAlias
+}
+
+input ArtifactAliasInput {
+  alias: String!
+  artifactCollectionName: String!
+}
+
+interface ArtifactCollection {
+  aliasActionHistory(after: String, alias: String, before: String, first: Int, last: Int, order: String): ArtifactAliasActionConnection!
+  aliases(after: String, before: String, first: Int, last: Int): ArtifactAliasConnection!
+  artifactActions(after: String, before: String, first: Int, last: Int): ArtifactActionConnection @deprecated
+  artifactCollectionActions(after: String, before: String, filters: JSONString, first: Int, last: Int, order: String): ArtifactCollectionActionConnection!
+  artifactMembership(aliasName: String!): ArtifactCollectionMembership
+  artifactMemberships(after: String, before: String, first: Int, last: Int): ArtifactCollectionMembershipConnection!
+  artifacts(after: String, before: String, filters: JSONString, first: Int, last: Int, order: String): VersionedArtifactConnection
+  createdAt: DateTime!
+  defaultArtifactType: ArtifactType!
+  description: String
+  hasArtifactVersionLinkedToGlobalRegistry: Boolean!
+  id: ID!
+  name: String!
+  project: Project
+  state: ArtifactCollectionState!
+  tags(after: String, before: String, first: Int, last: Int, tagCategoryName: String): TagConnection!
+  triggers(after: String, before: String, first: Int, last: Int): TriggerConnection!
+  updatedAt: DateTime
+}
+
+type ArtifactCollectionAction {
+  actionType: String!
+  artifact: Artifact
+  artifactCollection: ArtifactCollection
+  createdAt: DateTime!
+  id: ID!
+  user: User
+}
+
+type ArtifactCollectionActionConnection {
+  edges: [ArtifactCollectionActionEdge!]!
+  pageInfo: PageInfo!
+}
+
+type ArtifactCollectionActionEdge {
+  cursor: String!
+  node: ArtifactCollectionAction!
+}
+
+type ArtifactCollectionAlias {
+  alias: String!
+  artifactCollectionName: String!
+  entityName: String!
+  projectName: String!
+}
+
+input ArtifactCollectionAliasInput {
+  alias: String!
+  artifactCollectionName: String!
+  entityName: String!
+  projectName: String!
+}
+
+type ArtifactCollectionConnection {
+  edges: [ArtifactCollectionEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type ArtifactCollectionEdge {
+  cursor: String!
+  node: ArtifactCollection
+}
+
+type ArtifactCollectionMembership {
+  aliases: [ArtifactAlias!]!
+  artifact: Artifact
+  artifactCollection: ArtifactCollection
+  commitHash: String
+  createdAt: DateTime!
+  id: ID!
+  versionIndex: Int
+}
+
+type ArtifactCollectionMembershipConnection {
+  edges: [ArtifactCollectionMembershipEdge!]!
+  pageInfo: PageInfo!
+}
+
+type ArtifactCollectionMembershipEdge {
+  cursor: String!
+  node: ArtifactCollectionMembership
+}
+
+enum ArtifactCollectionState {
+  READY
+  DELETED
+}
+
+enum ArtifactCollectionType {
+  SEQUENCE
+  PORTFOLIO
+}
+
+type ArtifactConnection implements ArtifactConnectionType {
+  edges: [ArtifactEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+interface ArtifactConnectionType {
+  edges: [ArtifactEdgeType!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+"""deprecated"""
+enum ArtifactDigestAlgorithm {
+  MANIFEST_MD5
+}
+
+type ArtifactEdge implements ArtifactEdgeType {
+  cursor: String!
+  node: Artifact
+}
+
+interface ArtifactEdgeType {
+  cursor: String!
+  node: Artifact
+}
+
+type ArtifactLineageDag {
+  artifacts: [ArtifactLineageDagArtifact]!
+  clusters: [ArtifactLineageDagCluster]!
+  edges: [ArtifactLineageDagEdge]!
+  hitLimit: Boolean!
+  runs: [ArtifactLineageDagRun]!
+}
+
+type ArtifactLineageDagArtifact {
+  artifactCommitHash: String!
+  artifactNodeID: String!
+  artifactSequenceName: String!
+  artifactTypeName: String!
+  entityName: String!
+  id: ID!
+  projectName: String!
+  versionIndex: Int!
+}
+
+type ArtifactLineageDagCluster {
+  artifactNodes: [ArtifactLineageDagArtifact]!
+  clusterEdges: [ArtifactLineageDagEdge]!
+  id: String!
+  nodeType: DagNodeType!
+  runNodes: [ArtifactLineageDagRun]!
+}
+
+type ArtifactLineageDagEdge {
+  artifactNodeID: String!
+  clusterNodeID: String
+  direction: DagDirection!
+  edgeID: String!
+  runNodeID: String!
+}
+
+type ArtifactLineageDagRun {
+  displayName: String
+  entityName: String!
+  jobType: String
+  projectName: String!
+  runName: String!
+  runNodeID: String!
+}
+
+type ArtifactManifest {
+  artifact: Artifact!
+  createdAt: DateTime!
+  digest: String!
+  file: File!
+  id: ID!
+  type: ArtifactManifestType!
+}
+
+type ArtifactManifestConnection {
+  edges: [ArtifactManifestEdge!]!
+  pageInfo: PageInfo!
+}
+
+type ArtifactManifestEdge {
+  cursor: String!
+  node: ArtifactManifest
+}
+
+enum ArtifactManifestType {
+  FULL
+  PATCH
+  INCREMENTAL
+}
+
+type ArtifactPortfolio implements ArtifactCollection {
+  aliasActionHistory(after: String, alias: String, before: String, first: Int, last: Int, order: String): ArtifactAliasActionConnection!
+  aliases(after: String, before: String, first: Int, last: Int): ArtifactAliasConnection!
+  artifactActions(after: String, before: String, first: Int, last: Int): ArtifactActionConnection! @deprecated
+  artifactCollectionActions(after: String, before: String, filters: JSONString, first: Int, last: Int, order: String): ArtifactCollectionActionConnection!
+  artifactMembership(aliasName: String!): ArtifactCollectionMembership
+  artifactMemberships(after: String, before: String, first: Int, last: Int): ArtifactCollectionMembershipConnection!
+  artifacts(after: String, before: String, filters: JSONString, first: Int, last: Int, order: String): VersionedArtifactConnection!
+  createdAt: DateTime!
+  defaultArtifactType: ArtifactType!
+  description: String
+  hasArtifactVersionLinkedToGlobalRegistry: Boolean!
+  id: ID!
+  name: String!
+  project: Project
+  state: ArtifactCollectionState!
+  tags(after: String, before: String, first: Int, last: Int, tagCategoryName: String): TagConnection!
+  triggers(after: String, before: String, first: Int, last: Int): TriggerConnection!
+  updatedAt: DateTime
+}
+
+type ArtifactSequence implements ArtifactCollection {
+  aliasActionHistory(after: String, alias: String, before: String, first: Int, last: Int, order: String): ArtifactAliasActionConnection!
+  aliases(after: String, before: String, first: Int, last: Int): ArtifactAliasConnection!
+  artifactActions(after: String, before: String, first: Int, last: Int): ArtifactActionConnection! @deprecated
+  artifactCollectionActions(after: String, before: String, filters: JSONString, first: Int, last: Int, order: String): ArtifactCollectionActionConnection!
+
+  """
+  aliasName can be an alias (latest, v0, custom_alias), commitHash, or digest
+  """
+  artifactMembership(aliasName: String!): ArtifactCollectionMembership
+  artifactMemberships(after: String, before: String, first: Int, last: Int): ArtifactCollectionMembershipConnection!
+  artifacts(after: String, before: String, filters: JSONString, first: Int, last: Int, order: String): VersionedArtifactConnection!
+  createdAt: DateTime!
+  defaultArtifactType: ArtifactType!
+  description: String
+  hasArtifactVersionLinkedToGlobalRegistry: Boolean!
+  id: ID!
+  latestArtifact: Artifact
+  name: String!
+  project: Project
+  state: ArtifactCollectionState!
+  tags(after: String, before: String, first: Int, last: Int, tagCategoryName: String): TagConnection!
+  triggers(after: String, before: String, first: Int, last: Int): TriggerConnection!
+  updatedAt: DateTime
+}
+
+type ArtifactSequenceConnection {
+  edges: [ArtifactSequenceEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type ArtifactSequenceEdge {
+  cursor: String!
+  node: ArtifactSequence
+}
+
+type ArtifactSequenceStorageNode implements StorageTreeNode {
+  artifacts(after: String, before: String, first: Int, last: Int): ArtifactStorageNodeConnection!
+  artifactSequence: ArtifactSequence!
+  artifactSequenceID: ID!
+  artifactType: ArtifactType!
+  id: ID!
+  name: String!
+  size: Int64!
+}
+
+type ArtifactSequenceStorageNodeConnection {
+  edges: [ArtifactSequenceStorageNodeEdge!]!
+  pageInfo: PageInfo!
+  totalSize: Int64!
+}
+
+type ArtifactSequenceStorageNodeEdge {
+  cursor: String!
+  node: ArtifactSequenceStorageNode!
+}
+
+enum ArtifactState {
+  PENDING
+  COMMITTED
+  DELETED
+}
+
+enum ArtifactStorageLayout {
+  V1
+  V2
+}
+
+type ArtifactStorageNode implements StorageTreeNode {
+  artifact: Artifact!
+  artifactID: ID!
+  id: ID!
+  name: String!
+  size: Int64!
+}
+
+type ArtifactStorageNodeConnection {
+  edges: [ArtifactStorageNodeEdge!]!
+  pageInfo: PageInfo!
+  totalSize: Int64!
+}
+
+type ArtifactStorageNodeEdge {
+  cursor: String!
+  node: ArtifactStorageNode!
+}
+
+type ArtifactType {
+  artifact(name: String!): Artifact
+  artifactActions(after: String, before: String, first: Int, last: Int): ArtifactActionConnection
+  artifactCollection(name: String!): ArtifactCollection
+  artifactCollections(after: String, before: String, collectionTypes: [ArtifactCollectionType!], filters: JSONString, first: Int, last: Int, order: String): ArtifactCollectionConnection
+  artifactSequence(name: String!): ArtifactSequence
+
+  """legacy: prefer artifactCollection"""
+  artifactSequences(after: String, before: String, filters: JSONString, first: Int, last: Int, order: String): ArtifactSequenceConnection
+  createdAt: DateTime!
+  description: String
+  id: ID!
+  name: String!
+  project: Project!
+}
+
+type ArtifactTypeConnection {
+  edges: [ArtifactTypeEdge!]!
+  pageInfo: PageInfo!
+}
+
+type ArtifactTypeEdge {
+  cursor: String!
+  node: ArtifactType
+}
+
+input ArtifactTypeInput {
+  """
+  new artifact type name, allows alphanumeric chars, hyphens, underscores and spaces
+  """
+  description: String
+  name: String!
+}
+
+type ArtifactTypeStorageNode implements StorageTreeNode {
+  artifactType: ArtifactType!
+  id: ID!
+  name: String!
+  size: Int64!
+}
+
+input AttachCustomerPaymentMethodInput {
+  clientMutationId: String
+  organizationId: ID!
+  paymentMethod: String!
+}
+
+type AttachCustomerPaymentMethodPayload {
+  clientMutationId: String
+  success: Boolean
+}
+
+type BenchmarkRun {
+  benchmark: Project!
+  createdAt: DateTime!
+  details: JSON
+  gitHubSubmissionPR: String
+  id: ID!
+  isCodeHidden: Boolean!
+  originalProject: Project
+  originalRun: Run
+  results: String
+  run: Run!
+  state: String!
+  updatedAt: DateTime
+  user: User!
+}
+
+type BenchmarkRunConnection {
+  edges: [BenchmarkRunEdge!]!
+  pageInfo: PageInfo!
+}
+
+type BenchmarkRunEdge {
+  cursor: String!
+  node: BenchmarkRun
+}
+
+type BucketDiff {
+  op: DiffOperation!
+  run: Run
+}
+
+type BucketDiffs {
+  delta: [BucketDiff!]!
+  order: [ID!]!
+}
+
+type BucketStoreConnectionError implements Error {
+  message: String!
+  severity: ErrorSeverity!
+}
+
+"""
+This exists for legacy queries that spread fragments on BucketType.
+Nothing new should be added here
+"""
+interface BucketType {
+  commit: String
+  config(keys: [String!]): JSONString
+  createdAt: DateTime!
+  description: String
+  exampleTable: JSONString
+  exampleTableColumns: JSONString
+  exampleTableTypes: JSONString
+  fileCount: Int
+  files(after: String, before: String, contentType: [String!], first: Int, last: Int, names: [String], pattern: String): FileConnection
+  framework: String
+  github: String
+  history(maxStep: Int64, minStep: Int64, samples: Int): [String!]!
+  host: String
+  id: ID!
+  logLines(after: String, before: String, first: Int, last: Int): LogLineConnection
+  name: String
+  shouldStop: Boolean
+  state: String
+  summaryMetrics(keys: [String!], packVersion: Int): JSONString
+  sweep: Sweep
+}
+
+input CancelCustomerSubscriptionInput {
+  clientMutationId: String
+  organizationId: ID!
+}
+
+type CancelCustomerSubscriptionPayload {
+  clientMutationId: String
+  success: Boolean
+}
+
+enum CardBrand {
+  AMEX
+  DINERS
+  DISCOVER
+  INTERAC
+  JCB
+  MASTERCARD
+  UNIONPAY
+  UNKNOWN
+  VISA
+}
+
+input ClaimAnonymousEntityInput {
+  anonymousApiKey: String!
+  clientMutationId: String
+}
+
+type ClaimAnonymousEntityPayload {
+  clientMutationId: String
+  task: Task!
+}
+
+type ClientIDMapping {
+  clientID: ID!
+  entry: ClientIDMappingEntry!
+  serverID: ID!
+}
+
+union ClientIDMappingEntry = Artifact | ArtifactSequence
+
+input CloneProjectsInput {
+  clientMutationId: String
+  destinationEntityName: String!
+  notes: String
+  ownerUsername: String!
+  projectNames: [String!]
+  sourceEntityName: String!
+}
+
+type CloneProjectsPayload {
+  clientMutationId: String
+  tasks: [Task!]!
+}
+
+enum CloudProvider {
+  AWS
+  GCP
+  AZURE
+  MINIO
+}
+
+type CloudRegion {
+  id: ID!
+  provider: CloudProvider!
+  region: String!
+}
+
+type Code {
+  body: String
+  directUrl: String!
+  name: String!
+}
+
+input CommitArtifactInput {
+  artifactID: ID!
+  clientMutationId: String
+}
+
+type CommitArtifactPayload {
+  artifact: Artifact!
+  clientMutationId: String
+}
+
+enum CompleteMultipartAction {
+  Complete
+}
+
+input CompleteMultipartUploadArtifactInput {
+  artifactID: ID!
+  completedParts: [UploadPartsInput!]!
+  completeMultipartAction: CompleteMultipartAction!
+  storagePath: String!
+  uploadID: String!
+}
+
+type CompleteMultipartUploadArtifactPayload {
+  digest: String
+}
+
+input ContactUsForComputeHoursInput {
+  clientMutationId: String
+}
+
+type ContactUsForComputeHoursPayload {
+  clientMutationId: String
+}
+
+input ContactUsForUserLedTrialInput {
+  clientMutationId: String
+}
+
+type ContactUsForUserLedTrialPayload {
+  clientMutationId: String
+}
+
+input CopyFileInput {
+  clientMutationId: String
+  entityName: String!
+  id: ID!
+  projectName: String!
+  runName: String!
+}
+
+type CopyFilePayload {
+  clientMutationId: String
+}
+
+input CreateAcademicOrReverseTrialInput {
+  clientMutationId: String
+  isAcademic: Boolean!
+  newOrganizationName: String!
+  newTeamName: String!
+}
+
+type CreateAcademicOrReverseTrialPayload {
+  clientMutationId: String
+  orgID: ID!
+  subscription: JSON
+}
+
+input CreateAccessTokenInput {
+  clientMutationId: String
+  email: String
+  previewURL: String
+  projects: [ProjectSpecifier!]!
+  username: String
+  viewId: ID!
+}
+
+type CreateAccessTokenPayload {
+  accessToken: AccessToken!
+  clientMutationId: String
+  recipientAlreadyOnTeam: Boolean
+  toNewUser: Boolean
+}
+
+input CreateAgentInput {
+  clientMutationId: String
+  displayName: String
+  entityName: String
+  host: String!
+  projectName: String
+  sweep: String!
+}
+
+type CreateAgentPayload {
+  agent: Agent
+  clientMutationId: String
+}
+
+type CreateAlertPayload {
+  alert: Alert!
+  clientMutationId: String
+}
+
+input CreateAnonymousEntityInput {
+  clientMutationId: String
+}
+
+type CreateArtifactCollectionPayload {
+  artifactCollection: ArtifactCollection!
+  clientMutationId: String
+}
+
+input CreateArtifactCollectionTagAssignmentsInput {
+  artifactCollectionName: String!
+  clientMutationID: String
+  entityName: String!
+  projectName: String!
+  tags: [TagInput!]!
+}
+
+input CreateArtifactFilesInput {
+  artifactFiles: [CreateArtifactFileSpecInput!]!
+  clientMutationId: String
+  cloudRegionID: ID
+  storageLayout: ArtifactStorageLayout! = V1
+}
+
+type CreateArtifactFilesPayload {
+  clientMutationId: String
+  files(after: String, before: String, first: Int, last: Int): FileConnection!
+}
+
+input CreateArtifactFileSpecInput {
+  artifactID: ID!
+  artifactManifestID: ID
+  md5: String!
+  mimetype: String
+  name: String!
+  uploadPartsInput: [UploadPartsInput!]
+}
+
+input CreateArtifactInput {
+  aliases: [ArtifactAliasInput!]
+  artifactCollectionName: String
+  artifactCollectionNames: [String!]
+  artifactTypeName: String!
+  clientID: ID
+  clientMutationId: String
+  description: String
+  digest: String!
+  digestAlgorithm: ArtifactDigestAlgorithm!
+  distributedID: String
+  enableDigestDeduplication: Boolean = false
+  entityName: String!
+  historyStep: Int64
+  labels: JSONString
+  metadata: JSONString
+  projectName: String!
+
+  """deprecated"""
+  runName: String
+  sequenceClientID: ID
+  tags: [TagInput!]
+  ttlDurationSeconds: Int64
+}
+
+input CreateArtifactManifestInput {
+  artifactID: ID!
+  baseArtifactID: ID
+  clientMutationId: String
+  digest: String!
+  entityName: String!
+  name: String!
+  projectName: String!
+  runName: String!
+  type: ArtifactManifestType! = FULL
+}
+
+type CreateArtifactManifestPayload {
+  artifactManifest: ArtifactManifest!
+  clientMutationId: String
+}
+
+type CreateArtifactPayload {
+  artifact: Artifact!
+  artifactActions: [ArtifactAction!]!
+  clientMutationId: String
+}
+
+input CreateArtifactPortfolioInput {
+  artifactTypeID: ID!
+  clientMutationId: String
+  description: String
+  entityName: String!
+  name: String!
+  projectName: String!
+}
+
+input CreateArtifactSequenceInput {
+  artifactTypeID: ID!
+  clientMutationId: String
+  description: String
+  entityName: String!
+  name: String!
+  projectName: String!
+}
+
+input CreateArtifactTagAssignmentsInput {
+  artifactID: ID!
+  clientMutationID: String
+  tags: [TagInput!]!
+}
+
+"""deprecated"""
+input CreateArtifactTypeInput {
+  clientMutationId: String
+  description: String
+  entityName: String!
+  name: String!
+  projectName: String!
+}
+
+"""deprecated"""
+type CreateArtifactTypePayload {
+  artifactType: ArtifactType!
+  clientMutationId: String
+}
+
+input CreateArtifactTypesInput {
+  artifactTypes: [ArtifactTypeInput!]!
+  clientMutationId: String
+  entityName: String!
+  projectName: String!
+}
+
+type CreateArtifactTypesPayload {
+  artifactTypes: [ArtifactType!]!
+  clientMutationId: String
+}
+
+input CreateAWSExternalIDInput {
+  clientMutationID: String
+  organizationID: ID
+}
+
+input CreateBenchmarkDiscussionCommentInput {
+  body: String!
+  clientMutationId: String
+  discussionThreadID: ID!
+  parentCommentID: ID
+}
+
+input CreateBenchmarkDiscussionThreadInput {
+  benchmarkEntityName: String!
+  benchmarkProjectName: String!
+  body: String
+  clientMutationId: String
+  title: String!
+}
+
+input CreateClientIDMappingInput {
+  clientID: ID!
+  clientMutationId: String
+  serverID: ID!
+}
+
+type CreateClientIDMappingPayload {
+  clientIDMapping: ClientIDMapping!
+  clientMutationId: String
+}
+
+input CreateClientInput {
+  entityName: String!
+  name: String
+  providerId: ID!
+  subject: String!
+}
+
+type CreateClientPayload {
+  clientId: String
+  success: Boolean!
+}
+
+input CreateCustomChartInput {
+  access: String!
+  clientMutationId: String
+  displayName: String!
+  entity: String!
+
+  """gorilla.ValidateCustomChartName"""
+  name: String!
+  spec: JSONString!
+  type: String!
+}
+
+type CreateCustomChartPayload {
+  chart: CustomChart!
+  clientMutationId: String
+}
+
+input CreateCustomerSubscriptionInput {
+  clientMutationId: String
+  newOrganizationName: String!
+  paymentMethod: String!
+  planId: ID!
+  quantity: Int!
+  trial: Boolean!
+}
+
+type CreateCustomerSubscriptionPayload {
+  clientMutationId: String
+  organizationId: ID!
+  subscription: JSON
+}
+
+input CreateCustomerTrialInput {
+  clientMutationId: String
+  newOrganizationName: String!
+  planId: ID!
+  quantity: Int!
+  trialDays: Int!
+  userName: String!
+}
+
+type CreateCustomerTrialPayload {
+  clientMutationId: String
+  subscription: JSON
+}
+
+input CreateDefaultResourceConfigInput {
+  clientMutationId: String
+  config: JSONString!
+  entityName: String!
+  projectName: String
+  resource: String!
+  templateVariables: JSONString
+}
+
+type CreateDefaultResourceConfigPayload {
+  clientMutationId: String
+  defaultResourceConfigID: ID!
+  schemaValidationErrors: [String!]
+  success: Boolean!
+}
+
+type CreateDiscussionCommentPayload {
+  clientMutationId: String
+  discussionComment: DiscussionComment!
+}
+
+type CreateDiscussionThreadPayload {
+  clientMutationId: String
+  discussionThread: DiscussionThread!
+}
+
+input CreateEmailSubscriptionInput {
+  alertID: ID!
+  clientMutationId: String
+}
+
+type CreateEmailSubscriptionPayload {
+  clientMutationId: String
+  subscription: EmailSubscription!
+}
+
+input CreateEntityInput {
+  clientMutationId: String
+  defaultAccess: String
+
+  """allows alphanumeric chars, hyphens, and underscores"""
+  defaultFramework: String
+
+  """deprecated"""
+  invited: String
+  name: String!
+}
+
+type CreateEntityPayload {
+  apiKey: ApiKey
+  clientMutationId: String
+  entity: Entity
+}
+
+input CreateExperimentInput {
+  clientMutationId: String
+  enrollmentPeriod: Int!
+  experimentType: ExperimentType!
+  metadata: JSONString
+  name: String!
+  observationalUnit: ObservationalUnit!
+  sampleSize: Int!
+  variants: [VariantInput!]!
+}
+
+type CreateExperimentPayload {
+  clientMutationId: String
+  id: ID!
+  success: Boolean!
+}
+
+input CreateFilterTriggerInput {
+  clientMutationId: String
+  description: String
+  enabled: Boolean!
+  eventFilter: JSONString!
+  name: String!
+  scopeID: ID!
+  scopeType: TriggerScopeType!
+  triggeredActionConfig: TriggeredActionConfig!
+  triggeredActionType: TriggeredActionType!
+  triggeringEventType: EventTriggeringConditionType!
+}
+
+type CreateFilterTriggerPayload {
+  clientMutationId: String
+  trigger: Trigger
+}
+
+input CreateFinishedRunAlertInput {
+  clientMutationId: String
+  entityName: String!
+  projectName: String
+}
+
+input CreateGenericWebhookIntegrationInput {
+  accessTokenRef: String
+  clientMutationId: String
+  entityName: String!
+  name: String!
+  secretRef: String
+  urlEndpoint: String!
+}
+
+input CreateGitHubOAuthIntegrationInput {
+  clientMutationId: String
+  code: String!
+  entityName: String!
+  redirectURI: String!
+  state: String!
+}
+
+input CreateGlueTaskInput {
+  arguments: JSONString!
+  clientMutationId: String
+  name: String!
+  status: String!
+  strategyMetadata: String!
+  strategyType: String!
+  taskType: String!
+}
+
+type CreateGlueTaskPayload {
+  clientMutationId: String
+  success: Boolean!
+}
+
+input CreateHourOverageSubscriptionInput {
+  clientMutationId: String
+  organizationId: ID!
+}
+
+type CreateHourOverageSubscriptionPayload {
+  clientMutationId: String
+  subscription: JSON
+}
+
+type CreateIntegrationPayload {
+  clientMutationId: String
+  integration: Integration!
+}
+
+input CreateInviteInput {
+  accountType: String
+  addSeat: Boolean
+
+  """deprecated"""
+  admin: Boolean
+  clientMutationId: String
+  email: String
+  entityName: String!
+  role: String
+  username: String
+}
+
+type CreateInvitePayload {
+  clientMutationId: String
+  emailSent: Boolean!
+  entity: Entity
+  invite: Invite
+  remainingSeats: Int
+  remainingViewOnlySeats: Int
+  success: Boolean!
+}
+
+input CreateLaunchAgentInput {
+  agentConfig: JSONString
+  clientMutationId: String
+  entityName: String!
+  hostname: String!
+  projectName: String!
+  runQueues: [ID!]!
+  version: String
+}
+
+type CreateLaunchAgentPayload {
+  clientMutationId: String
+  launchAgentId: ID!
+  success: Boolean
+}
+
+input CreateLocalLicenseOrganizationInput {
+  clientMutationId: String
+  newOrganizationName: String!
+}
+
+type CreateLocalLicenseOrganizationPayload {
+  clientMutationId: String
+  organization: Organization!
+}
+
+input CreateNewsletterSubscriptionInput {
+  clientMutationId: String
+  email: String
+}
+
+type CreateNewsletterSubscriptionPayload {
+  clientMutationId: String
+  newsletterSubscription: NewsletterSubscription!
+}
+
+input CreateOAuthProviderInput {
+  issuerUrl: String!
+  jwk: JSONString
+  organizationId: ID!
+}
+
+type CreateOAuthProviderPayload {
+  success: Boolean!
+}
+
+input CreatePreviewableLinkInput {
+  author: String!
+  clientMutationId: String
+  description: String!
+  entityName: String!
+  redirectURL: String!
+  resourceID: ID!
+  resourceType: PreviewableLinkResourceType!
+  title: String!
+  useDefaultImage: Boolean!
+}
+
+type CreatePreviewableLinkPayload {
+  clientMutationId: String
+  link: String!
+  previewImageUploadURL: String
+  success: Boolean!
+}
+
+input CreateProjectMembersInput {
+  projectId: ID!
+  userIds: [ID!]!
+}
+
+type CreateProjectMembersPayload {
+  success: Boolean!
+}
+
+input CreateRoleInput {
+  description: String
+  inheritedFrom: String!
+  name: String!
+  organizationID: ID!
+  permissions: [String!]!
+}
+
+type CreateRolePayload {
+  success: Boolean!
+}
+
+input CreateRunFilesInput {
+  clientMutationId: String
+  entityName: String!
+  files: [String!]!
+  projectName: String!
+  runName: String!
+}
+
+type CreateRunFilesPayload {
+  clientMutationId: String
+  files: [File!]!
+  runID: ID!
+  uploadHeaders: [String!]!
+}
+
+input CreateRunQueueInput {
+  access: RunQueueAccessType!
+  clientMutationId: String
+  defaultResourceConfigID: ID
+  entityName: String!
+  prioritizationMode: RunQueuePrioritizationMode
+  projectName: String!
+  queueName: String!
+}
+
+type CreateRunQueuePayload {
+  clientMutationId: String
+  queueID: ID
+  success: Boolean
+}
+
+input CreateScriptableRunAlertInput {
+  clientMutationId: String
+  entityName: String!
+  projectName: String
+}
+
+input CreateServiceAccountInput {
+  clientMutationId: String
+  description: String
+  entityName: String
+  organizationId: ID
+}
+
+type CreateServiceAccountPayload {
+  clientMutationId: String
+  user: User
+}
+
+input CreateSlackChannelSubscriptionInput {
+  alertID: ID!
+  clientMutationId: String
+  integrationID: ID!
+}
+
+type CreateSlackChannelSubscriptionPayload {
+  clientMutationId: String
+  subscription: SlackChannelSubscription!
+}
+
+input CreateSlackIntegrationInput {
+  clientMutationId: String
+  code: String!
+  entityName: String!
+  redirectURI: String!
+}
+
+input CreateStoppedRunAlertInput {
+  clientMutationId: String
+  entityName: String!
+  minimumRunDuration: Duration!
+  projectName: String
+}
+
+input CreateStorageSubscriptionInput {
+  clientMutationId: String
+  organizationId: ID
+  paymentMethod: String
+  storagePlanId: ID
+  trackingPlanId: ID
+  trial: Boolean
+}
+
+type CreateStorageSubscriptionPayload {
+  clientMutationId: String
+  subscription: JSON
+}
+
+type CreateTagsPayload {
+  clientMutationID: String
+  tags: [Tag!]!
+}
+
+input CreateTeamInput {
+  clientMutationId: String
+
+  """Optionally, the organization this team belongs to."""
+  defaultAccess: String
+
+  """Optionally, user name of the admin. Defaults to auth user."""
+  organizationId: String
+  storageBucketInfo: StorageBucketInfoInput
+
+  """new team name, allows alphanumeric chars, hyphens, and underscores"""
+  teamAdminUserName: String
+  teamName: String!
+}
+
+type CreateTeamPayload {
+  clientMutationId: String
+  entity: Entity
+}
+
+input CreateUserEmailInput {
+  email: String!
+  type: EmailType!
+}
+
+type CreateUserEmailPayload {
+  email: Email
+  success: Boolean!
+}
+
+input CreateUserInput {
+  accountType: String
+  admin: Boolean
+  clientMutationId: String
+  email: String!
+  password: String
+}
+
+input CreateUserLedTrialInput {
+  allowJoinMatchingEmailDomain: Boolean
+  clientMutationId: String
+  isAcademic: Boolean!
+  justification: String
+  newOrganizationName: String!
+  newTeamName: String!
+  orgSize: String!
+  storageBucketInfo: StorageBucketInfoInput
+}
+
+type CreateUserLedTrialPayload {
+  clientMutationId: String
+  orgID: ID!
+  subscription: JSON
+}
+
+type CreateUserPayload {
+  clientMutationId: String
+  user: User
+}
+
+input CreateViewCommentsAlertSubscriptionInput {
+  clientMutationId: String
+  viewID: ID!
+}
+
+input CreateViewDiscussionCommentInput {
+  body: String!
+  clientMutationId: String
+  discussionThreadID: ID
+  inlineCommentDetails: JSONString
+  notifyAllSubscribers: Boolean = false
+  viewID: ID!
+}
+
+type CreateViewDiscussionCommentPayload {
+  alertSubscription: AlertSubscription!
+  clientMutationId: String
+  discussionComment: DiscussionComment!
+  discussionThread: DiscussionThread!
+}
+
+type CustomChart {
+  access: String!
+  createdAt: DateTime!
+  displayName: String!
+  entity: Entity!
+  id: ID!
+  name: String!
+  spec: JSONString!
+  type: String!
+  updatedAt: DateTime
+  user: User!
+}
+
+type CustomChartConnection {
+  edges: [CustomChartEdge!]!
+  pageInfo: PageInfo!
+}
+
+type CustomChartEdge {
+  cursor: String!
+  node: CustomChart!
+}
+
+enum DagDirection {
+  TowardArtifact
+  AwayFromArtifact
+}
+
+enum DagNodeType {
+  Artifact
+  Run
+}
+
+scalar DateTime
+
+type DefaultResourceConfig {
+  config: JSON
+  createdAt: DateTime!
+  id: ID!
+  resource: String!
+  scope: DefaultResourceConfigScope!
+  templateVariables: [TemplateVariable!]!
+  updatedAt: DateTime
+}
+
+type DefaultResourceConfigConnection {
+  edges: [DefaultResourceConfigEdge!]!
+  pageInfo: PageInfo!
+}
+
+type DefaultResourceConfigEdge {
+  cursor: String!
+  node: DefaultResourceConfig!
+}
+
+type DefaultResourceConfigScope {
+  ID: Int!
+  Type: DefaultResourceConfigScopeType!
+}
+
+enum DefaultResourceConfigScopeType {
+  PROJECT
+  ENTITY
+}
+
+input DeleteAlertInput {
+  clientMutationId: String
+  id: ID!
+}
+
+type DeleteAlertPayload {
+  clientMutationId: String
+  success: Boolean
+}
+
+input DeleteAlertSubscriptionInput {
+  clientMutationId: String
+  id: ID!
+}
+
+type DeleteAlertSubscriptionPayload {
+  clientMutationId: String
+  success: Boolean
+}
+
+input DeleteAliasesInput {
+  aliases: [ArtifactCollectionAliasInput!]!
+  artifactID: ID!
+  clientMutationId: String
+}
+
+type DeleteAliasesPayload {
+  clientMutationId: String
+  success: Boolean!
+}
+
+input DeleteApiKeyInput {
+  clientMutationId: String
+  id: String
+}
+
+type DeleteApiKeyPayload {
+  clientMutationId: String
+  success: Boolean
+}
+
+type DeleteArtifactAction implements ArtifactAction {
+  artifact: Artifact!
+  createdAt: DateTime!
+  id: ID!
+  initiator: Initiator!
+}
+
+type DeleteArtifactCollectionPayload {
+  artifactCollection: ArtifactCollection!
+  clientMutationId: String
+}
+
+input DeleteArtifactCollectionTagAssignmentsInput {
+  artifactCollectionName: String!
+  clientMutationID: String
+  entityName: String!
+  projectName: String!
+  tags: [TagInput!]!
+}
+
+input DeleteArtifactEntityTTLInput {
+  clientMutationId: String
+  entityName: String!
+}
+
+type DeleteArtifactEntityTTLPayload {
+  clientMutationId: String
+}
+
+input DeleteArtifactInput {
+  artifactID: ID!
+  clientMutationId: String
+  deleteAliases: Boolean = false
+}
+
+type DeleteArtifactPayload {
+  artifact: Artifact!
+  clientMutationId: String
+}
+
+input DeleteArtifactPortfolioInput {
+  artifactPortfolioID: ID!
+  clientMutationId: String
+}
+
+input DeleteArtifactSequenceInput {
+  artifactSequenceID: ID!
+  clientMutationId: String
+}
+
+input DeleteArtifactTagAssignmentsInput {
+  artifactID: ID!
+  clientMutationID: String
+  tags: [TagInput!]!
+}
+
+input DeleteCustomChartInput {
+  clientMutationId: String
+  entity: String!
+  name: String!
+}
+
+type DeleteCustomChartPayload {
+  clientMutationId: String
+  success: Boolean!
+}
+
+input DeleteDefaultResourceConfigsInput {
+  clientMutationId: String
+  defaultResourceConfigIDs: [ID!]!
+}
+
+type DeleteDefaultResourceConfigsPayload {
+  clientMutationId: String
+  numAffected: Int64!
+  success: Boolean!
+}
+
+input DeleteDiscussionCommentInput {
+  clientMutationId: String
+  deleteThread: Boolean = false
+  id: ID!
+}
+
+type DeleteDiscussionCommentPayload {
+  clientMutationId: String
+  success: Boolean
+}
+
+input DeleteExperimentInput {
+  clientMutationId: String
+  id: ID!
+}
+
+type DeleteExperimentPayload {
+  clientMutationId: String
+  id: ID!
+  success: Boolean!
+}
+
+input DeleteFilesByRunAndFolderInput {
+  clientMutationId: String
+  folders: [String!]!
+  projectId: Int!
+  runName: String!
+}
+
+input DeleteFilesInput {
+  clientMutationId: String
+  files: [ID!]!
+}
+
+type DeleteFilesPayload {
+  clientMutationId: String
+  success: Boolean!
+}
+
+input DeleteFromRunQueueInput {
+  clientMutationId: String
+  queueID: ID!
+  runQueueItemId: ID!
+}
+
+type DeleteFromRunQueuePayload {
+  clientMutationId: String
+  success: Boolean
+}
+
+input DeleteGlueTaskInput {
+  clientMutationId: String
+  id: ID!
+}
+
+type DeleteGlueTaskPayload {
+  clientMutationId: String
+  success: Boolean!
+}
+
+input DeleteIntegrationInput {
+  clientMutationId: String
+  id: ID!
+}
+
+type DeleteIntegrationPayload {
+  clientMutationId: String
+  success: Boolean
+}
+
+input DeleteInviteInput {
+  clientMutationId: String
+  entityName: String
+  id: String
+}
+
+type DeleteInvitePayload {
+  clientMutationId: String
+  success: Boolean
+}
+
+input DeleteLaunchAgentsInput {
+  clientMutationId: String
+  launchAgentIds: [ID!]!
+}
+
+type DeleteLaunchAgentsPayload {
+  clientMutationId: String
+  success: Boolean
+}
+
+input DeleteModelInput {
+  clientMutationId: String
+  id: String!
+}
+
+type DeleteModelPayload {
+  clientMutationId: String
+  success: Boolean
+}
+
+input DeleteOAuthProviderInput {
+  providerId: ID!
+}
+
+type DeleteOAuthProviderPayload {
+  success: Boolean!
+}
+
+input DeleteOrganizationInput {
+  clientMutationId: String
+  organizationId: ID!
+}
+
+type DeleteOrganizationPayload {
+  clientMutationId: String
+  success: Boolean!
+}
+
+input DeleteOrganizationSubscriptionInput {
+  clientMutationId: String
+  subscriptionID: ID!
+}
+
+type DeleteOrganizationSubscriptionPayload {
+  clientMutationId: String
+  success: Boolean!
+}
+
+input DeleteProjectMembersInput {
+  projectId: ID!
+  userIds: [ID!]!
+}
+
+type DeleteProjectMembersPayload {
+  success: Boolean!
+}
+
+input DeleteRoleInput {
+  roleID: ID!
+}
+
+type DeleteRolePayload {
+  success: Boolean!
+}
+
+input DeleteRolePermissionsInput {
+  permissions: [String!]!
+  roleID: ID!
+}
+
+type DeleteRolePermissionsPayload {
+  success: Boolean!
+}
+
+input DeleteRunInput {
+  clientMutationId: String
+  deleteArtifacts: Boolean = false
+  id: ID!
+}
+
+type DeleteRunPayload {
+  clientMutationId: String
+}
+
+input DeleteRunQueuesInput {
+  clientMutationId: String
+  queueIDs: [ID!]!
+}
+
+type DeleteRunQueuesPayload {
+  clientMutationId: String
+  success: Boolean
+}
+
+input DeleteRunsInput {
+  clientMutationId: String
+  deleteArtifacts: Boolean = false
+  entityName: String!
+  filters: JSONString!
+  projectName: String!
+}
+
+type DeleteRunsPayload {
+  clientMutationId: String
+  errors: String
+}
+
+input DeleteSecretInput {
+  clientMutationId: String
+  entityName: String!
+  secretName: String!
+}
+
+type DeleteSecretPayload {
+  clientMutationId: String
+  success: Boolean!
+}
+
+input DeleteSweepInput {
+  clientMutationId: String
+  deleteRuns: Boolean!
+  id: ID!
+}
+
+input DeleteSweepsInput {
+  clientMutationId: String
+  deleteRuns: Boolean!
+  ids: [ID!]!
+}
+
+type DeleteSweepsPayload {
+  affectedAgents: Int!
+  affectedRuns: Int!
+  clientMutationId: String
+}
+
+type DeleteTagAssignmentPayload {
+  clientMutationID: String
+  success: Boolean!
+}
+
+input DeleteTeamInput {
+  clientMutationId: String
+  teamName: String!
+}
+
+type DeleteTeamPayload {
+  clientMutationId: String
+  success: Boolean!
+}
+
+input DeleteTriggerInput {
+  clientMutationId: String
+  triggerID: ID!
+}
+
+type DeleteTriggerPayload {
+  clientMutationId: String
+  success: Boolean!
+}
+
+input DeleteUserEmailInput {
+  id: ID!
+}
+
+type DeleteUserEmailPayload {
+  email: Email
+  success: Boolean!
+}
+
+input DeleteUserInput {
+  clientMutationId: String
+  id: ID!
+}
+
+type DeleteUserPayload {
+  clientMutationId: String
+  user: User
+}
+
+input DeleteViewInput {
+  clientMutationId: String
+  deleteDrafts: Boolean = false
+  id: ID
+}
+
+type DeleteViewPayload {
+  clientMutationId: String
+  pendingDrafts: Boolean
+  success: Boolean
+}
+
+input DeleteViewsInput {
+  clientMutationId: String
+  deleteDrafts: Boolean = false
+  ids: [ID!]!
+}
+
+type DeleteViewsPayload {
+  clientMutationId: String
+  pendingDrafts: Boolean
+  success: Boolean
+}
+
+input DeleteWorkflowsAdminInput {
+  adminType: WorkflowsAdminType!
+  clientMutationID: String
+  entityName: String!
+  userID: ID
+  username: String
+}
+
+type DeleteWorkflowsAdminPayload {
+  clientMutationID: String
+  success: Boolean!
+}
+
+input DetachCustomerPaymentMethodInput {
+  clientMutationId: String
+  organizationId: ID!
+  paymentMethod: String!
+}
+
+type DetachCustomerPaymentMethodPayload {
+  clientMutationId: String
+  success: Boolean
+}
+
+enum DiffOperation {
+  INSERT
+  DELETE
+  UPDATE
+}
+
+input DisableGlueTaskInput {
+  clientMutationId: String
+  id: ID!
+}
+
+type DisableGlueTaskPayload {
+  clientMutationId: String
+  success: Boolean!
+}
+
+input DisableOldTrackingSubscriptionInput {
+  clientMutationId: String
+  organizationId: ID!
+}
+
+type DisableOldTrackingSubscriptionPayload {
+  clientMutationId: String
+  subscriptionID: String
+}
+
+type DiscussionComment {
+  body: String!
+  childComments(after: String, before: String, first: Int, last: Int): DiscussionCommentConnection!
+  createdAt: DateTime!
+  deletedAt: DateTime
+  id: ID!
+  isParent: Boolean!
+  parentComment: DiscussionComment
+  poster: User!
+  updatedAt: DateTime
+  upvotes: Int!
+}
+
+type DiscussionCommentConnection {
+  edges: [DiscussionCommentEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type DiscussionCommentEdge {
+  cursor: String!
+  node: DiscussionComment!
+}
+
+type DiscussionThread {
+  body: String!
+  comments(after: String, before: String, first: Int, last: Int): DiscussionCommentConnection!
+  createdAt: DateTime!
+  deletedAt: DateTime
+  id: ID!
+  poster: User!
+  title: String!
+  updatedAt: DateTime
+  upvotes: Int!
+}
+
+type DiscussionThreadConnection {
+  edges: [DiscussionThreadEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type DiscussionThreadEdge {
+  cursor: String!
+  node: DiscussionThread!
+}
+
+type DismissedBanner {
+  dismissedAt: DateTime!
+  id: ID!
+}
+
+enum DotBehavior {
+  KEEP_ALL_DOT_VALUES
+  SKIP_FIRST_DOT_VALUE
+}
+
+scalar Duration
+
+type Email {
+  createdAt: DateTime!
+  emailAddress: String!
+  id: ID!
+  identities: [Identity!]!
+  type: EmailType!
+  verified: Boolean!
+}
+
+type EmailSubscription implements AlertSubscription {
+  id: ID!
+}
+
+enum EmailType {
+  PERSONAL
+  CORPORATE
+  ACADEMIC
+}
+
+input EnableGlueTaskInput {
+  clientMutationId: String
+  id: ID!
+}
+
+type EnableGlueTaskPayload {
+  clientMutationId: String
+  success: Boolean!
+}
+
+type Entity implements Node {
+  accessTokens: [AccessToken!]!
+  artifactCollections(after: String, before: String, collectionTypes: [ArtifactCollectionType!], filters: JSONString, first: Int, last: Int, order: String): ArtifactCollectionConnection
+  artifactCollectionStorageTree(after: String, artifactCollectionID: ID!, before: String, cached: Boolean = false, enableReferenceTracking: Boolean = false, first: Int, last: Int): ArtifactStorageNodeConnection
+  artifactTTLDurationSeconds: Int64!
+  available: Boolean
+  claimedEntities(after: String, before: String, first: Int, last: Int): EntityConnection
+  claimingEntity: Entity
+  codeSavingEnabled: Boolean!
+  computeHours(cached: Boolean = false, minDaysOld: Int = 0, timeWindow: TimeWindow): Duration!
+  createdAt: DateTime!
+  dailyRunCount(limit: Int!): [Int!]!
+  defaultAccess: String!
+  defaultAlerts: [Alert!]!
+  defaultResourceConfig(id: ID!): DefaultResourceConfig
+  defaultResourceConfigs(after: String, before: String, first: Int, last: Int): DefaultResourceConfigConnection
+  entityType: String
+  featureFlags(featureKey: String, rampIDType: RampIDType!): [FeatureFlag]!
+  id: ID!
+  integrations(after: String, before: String, first: Int, last: Int): IntegrationConnection
+  invitedTeam: String
+  invites(after: String, batchSize: Int, before: String, first: Int, keysOnly: Boolean, last: Int, pageSize: Int): InviteConnection
+  isPaid: Boolean
+  isTeam: Boolean!
+  latestRuns: RunConnection
+  launchProject: Project
+  limits: JSONString
+  member(id: ID!): Member
+  memberCount: Int!
+  members: [Member!]!
+  name: String!
+  organization: Organization
+  organizationId: ID
+  photoUploadUrl: String!
+  photoUrl: String
+  privateOnly: Boolean!
+  profileView: View
+  project(name: String): Project
+  projectCount: Int!
+  projects(after: String, before: String, first: Int, last: Int, order: String, pattern: String): ProjectConnection
+  protectedAliases(adminType: WorkflowsAdminType!): [String!]!
+  rateLimits: RateLimits
+  readOnly: Boolean
+  readOnlyAdmin: Boolean!
+  referenceBytes(cached: Boolean = false): Int64!
+  repos(after: String, before: String, first: Int, last: Int): RepoConnection
+  secrets: [Secret!]!
+  settings: EntitySettings!
+  storageBytes(cached: Boolean = false): Int64!
+  storageTree(cached: Boolean = false, enableReferenceTracking: Boolean = false): EntityStorageNode
+  subscriptionId: Int
+  tagCategories: [TagCategory!]!
+  updatedAt: DateTime
+  uploadHeaders: [String!]!
+  user: User
+  userStats(after: String, before: String, filters: JSONString, first: Int, from: DateTime!, last: Int, order: String, to: DateTime): EntityUserConnection
+  views(after: String, before: String, first: Int, last: Int, limit: Int, offset: Int, order: String): ViewConnection!
+  workflowsAdmins(adminType: WorkflowsAdminType!): [User!]!
+}
+
+type EntityConnection {
+  edges: [EntityEdge!]!
+}
+
+type EntityEdge {
+  cursor: String!
+  node: Entity
+}
+
+type EntitySettings {
+  defaultCloudRegion: CloudRegion!
+  disableMagicLinkSharing: Boolean
+  disableMembersEditArtifactTTL: Boolean!
+  entityProfileEnabled: Boolean!
+  hidden: Boolean!
+  hideActivityCalendar: Boolean!
+  membersCanInvite: Boolean
+  openToMatchingOrgEmailDomainUsers: Boolean
+  storageBucketInfo: StorageBucketInfo
+}
+
+input EntitySettingsInput {
+  defaultCloudRegionID: String
+  disableMagicLinkSharing: Boolean
+  disableMembersEditArtifactTTL: Boolean
+  entityProfileEnabled: Boolean
+  hidden: Boolean
+  hideActivityCalendar: Boolean
+  membersCanInvite: Boolean
+  openToMatchingOrgEmailDomainUsers: Boolean
+}
+
+type EntityStorageNode implements StorageTreeNode {
+  entity: Entity!
+  entityID: ID!
+  id: ID!
+  lastUpdatedAt: DateTime
+  name: String!
+  projects(after: String, before: String, first: Int, last: Int, query: String): ProjectStorageNodeConnection!
+  size: Int64!
+}
+
+type EntityUser implements Node {
+  id: ID!
+  runCount: Int!
+  user: User!
+}
+
+type EntityUserConnection {
+  """pageInfo: PageInfo!"""
+  edges: [EntityUserEdge!]!
+}
+
+type EntityUserEdge {
+  cursor: String!
+  node: EntityUser
+}
+
+interface Error {
+  message: String!
+}
+
+enum ErrorSeverity {
+  WARN
+  ERROR
+}
+
+type Event {
+  createdAt: DateTime
+  description: String
+  entityName: String
+  extra: String
+  id: String
+  kind: String
+  name: String
+  projectName: String
+  state: String
+  url: String
+  user: User
+}
+
+type EventEdge {
+  cursor: String!
+  node: Event
+}
+
+"""| Entity"""
+enum EventTriggeringConditionType {
+  CREATE_ARTIFACT
+
+  """runs at the end of artifact creation flow, i.e. CommitArtifact"""
+  UPDATE_ARTIFACT_ALIAS
+  ADD_ARTIFACT_ALIAS
+  LINK_MODEL
+  RUN_METRIC
+}
+
+type ExpansionPack implements Node {
+  expiresAt: DateTime
+  id: ID!
+  secondsLimit: Duration!
+  secondsRemaining: Duration!
+}
+
+type ExpansionPackConnection {
+  edges: [ExpansionPackEdge!]!
+}
+
+type ExpansionPackEdge {
+  cursor: String!
+  node: ExpansionPack!
+}
+
+type Experiment implements Node {
+  endAt: DateTime
+  enrollmentPeriod: Int!
+  experimentType: ExperimentType!
+  id: ID!
+  metadata: JSON
+  name: String!
+  observationalUnit: ObservationalUnit!
+  sampleSize: Int!
+  startAt: DateTime
+  updatedAt: DateTime!
+  variants: [Variant!]!
+}
+
+enum ExperimentType {
+  FEATURE_FLAG
+  AB_TEST
+}
+
+type FailedPaymentBanners {
+  orgsWithFailedPayments: [OrganizationDataForFailedPaymentBanner]!
+  userID: Int!
+}
+
+input FailRunQueueItemInput {
+  clientMutationId: String
+  filePaths: [String!]
+  info: JSONString
+  message: String
+  runQueueItemId: ID!
+  stage: String
+}
+
+type FailRunQueueItemPayload {
+  clientMutationId: String
+  success: Boolean
+}
+
+type FeatureFlag {
+  isEnabled: Boolean!
+  rampKey: String!
+}
+
+type File implements Node {
+  archived: Boolean
+  artifact: Artifact
+  createdAt: DateTime
+  deletedAt: DateTime
+  digest: String
+  directUrl: String!
+  displayName: String!
+  exists: Boolean!
+  id: ID!
+  isReference: Boolean!
+  md5: String
+  mimetype: String
+  name: String!
+  ndbId: ID @deprecated(reason: "Use id instead")
+  sizeBytes: Int64!
+  special: Boolean
+  storageBucket: String
+  storagePath: String
+  updatedAt: DateTime
+  uploadHeaders: [String!]!
+  uploadMultipartUrls: UploadMultipartUrls
+  uploadUrl: String
+  url(upload: Boolean): String
+}
+
+type FileConnection {
+  edges: [FileEdge!]!
+  pageInfo: PageInfo!
+  uploadHeaders: [String!]!
+}
+
+type FileEdge {
+  cursor: String!
+  node: File
+}
+
+type FileStorageNode implements StorageTreeNode {
+  file: File!
+  fileID: ID!
+  id: ID!
+  name: String!
+  size: Int64!
+}
+
+type FileStorageNodeConnection {
+  edges: [FileStorageNodeEdge!]!
+  pageInfo: PageInfo!
+  totalSize: Int64!
+}
+
+type FileStorageNodeEdge {
+  cursor: String!
+  node: FileStorageNode!
+}
+
+"""| CronTriggeringCondition"""
+type FilterEventTriggeringCondition {
+  eventType: EventTriggeringConditionType!
+  filter: String!
+}
+
+type FinishedRunCondition {
+  """GraphQL doesn't allow empty types, so this always returns true"""
+  success: Boolean!
+}
+
+type FolderMetadata {
+  name: String!
+  numberOfFiles: Int64!
+  size: Int64!
+}
+
+type Folders {
+  folderList: [FolderMetadata]!
+}
+
+input ForceCleanArtifactStorageStatsInput {
+  artifactCollectionIDs: [ID!]!
+}
+
+type ForceCleanArtifactStorageStatsPayload {
+  cleanedArtifactCollectionIDs: [ID!]!
+  success: Boolean!
+}
+
+input ForceCleanRunStorageStatsInput {
+  projectIDs: [Int!]!
+}
+
+type ForceCleanRunStorageStatsPayload {
+  cleanedProjectIDs: [Int!]!
+  success: Boolean!
+}
+
+input GenerateApiKeyInput {
+  clientMutationId: String
+  description: String
+}
+
+type GenerateApiKeyPayload {
+  apiKey: ApiKey
+  clientMutationId: String
+}
+
+input GenerateLocalLicenseInput {
+  clientMutationId: String
+  contactEmail: String!
+  customerName: String!
+  expDuration: Int!
+  flags: [String!]!
+  notes: String
+  seats: Int!
+  storageGigs: Int!
+  teams: Int!
+}
+
+type GenerateLocalLicensePayload {
+  clientMutationId: String
+  localLicense: LocalLicense!
+}
+
+input GenericWebhookActionInput {
+  integrationID: ID!
+  requestPayload: JSONString
+}
+
+type GenericWebhookIntegration implements Integration {
+  accessTokenRef: String
+  createdAt: DateTime!
+  id: ID!
+  name: String!
+  secretRef: String
+  urlEndpoint: String!
+}
+
+type GenericWebhookTriggeredAction {
+  integration: Integration!
+  requestPayload: JSONString
+}
+
+type GitHubOAuthIntegration implements Integration {
+  id: ID!
+}
+
+type GitInfo {
+  commit: String
+  remote: String
+}
+
+type GlueManager {
+  registeredTasks(after: String, before: String, first: Int, last: Int, pattern: String): GlueTaskConnection!
+  taskConfig(taskType: String!): GlueTaskConfig
+  taskTypes: [String!]!
+}
+
+type GlueRun {
+  arguments: JSONString
+  checkpoint: JSONString
+  errors: JSONString
+  id: ID!
+  retries: Int!
+  runAt: DateTime!
+  runtimeMS: Int64!
+  succeeded: Boolean!
+  task: GlueTask!
+}
+
+type GlueRunConnection {
+  edges: [GlueRunEdge!]!
+  pageInfo: PageInfo!
+}
+
+type GlueRunEdge {
+  cursor: String!
+  node: GlueRun!
+}
+
+type GlueTask {
+  """TODO: enum"""
+  arguments: JSONString
+  checkpoint: JSONString
+  glueRuns(after: String, before: String, first: Int, last: Int, pattern: String): GlueRunConnection!
+  id: ID!
+  lastRunAt: DateTime
+  name: String!
+  status: String!
+  strategyMetadata: String!
+
+  """TODO: enum"""
+  strategyType: String!
+  taskType: String!
+}
+
+type GlueTaskConfig {
+  argumentsSchema: JSONString!
+  checkpointSchema: JSONString!
+  defaultArguments: JSONString!
+}
+
+type GlueTaskConnection {
+  edges: [GlueTaskEdge!]!
+  pageInfo: PageInfo!
+}
+
+type GlueTaskEdge {
+  cursor: String!
+  node: GlueTask!
+}
+
+input GroupAggregation {
+  custom: [AggregationKey!]!
+  default: Aggregation!
+}
+
+enum HistoryKeysFormat {
+  PLAINTEXT
+  BITMAP
+}
+
+input HubSettingsInput {
+  disk: String
+  dockerEnabled: Boolean
+  image: String
+  redisEnabled: Boolean
+  repo: String
+}
+
+type Identity {
+  emailIdentityVerified: Boolean!
+  id: ID!
+  provider: String
+}
+
+type ImageUrl {
+  path: String
+  publicUrl: String
+  url: String
+}
+
+union Initiator = Run | User
+
+type InputArtifactConnection implements ArtifactConnectionType {
+  edges: [InputArtifactEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type InputArtifactEdge implements ArtifactEdgeType {
+  cursor: String!
+  node: Artifact
+  usedAs: [String!]!
+}
+
+input InsertGalleryDiscussionInput {
+  clientMutationId: String
+  reportID: ID!
+  sendEmail: Boolean
+  spec: String!
+}
+
+type InsertGalleryDiscussionPayload {
+  clientMutationId: String
+  success: Boolean!
+}
+
+input InsertSecretInput {
+  clientMutationId: String
+  entityName: String!
+  secretName: String!
+  secretValue: String!
+}
+
+type InsertSecretPayload {
+  clientMutationId: String
+  success: Boolean!
+}
+
+scalar Int64
+
+interface Integration {
+  id: ID!
+}
+
+type IntegrationConnection {
+  edges: [IntegrationEdge!]!
+  pageInfo: PageInfo!
+}
+
+type IntegrationEdge {
+  cursor: String!
+  node: Integration
+}
+
+type Invite {
+  accepted: Boolean
+  createdAt: DateTime
+  email: String
+  entity: Entity
+  expiresAt: DateTime
+  fromUser: User
+  id: ID!
+  name: String!
+  organization: Organization
+  role: String!
+  toUser: User
+  updatedAt: DateTime
+}
+
+type InviteConnection {
+  edges: [InviteEdge!]!
+  pageInfo: PageInfo!
+}
+
+type InviteEdge {
+  cursor: String!
+  node: Invite
+}
+
+type JobSetDiff {
+  complete: Boolean!
+  metadata: JSON
+  removeJobs: [ID!]!
+  upsertJobs: [RunQueueItem!]!
+  version: Int!
+}
+
+input JobSetSelectorInput {
+  entityName: String!
+  jobSetName: String!
+  projectName: String
+}
+
+scalar JSON
+
+scalar JSONString
+
+type LaunchAgent {
+  agentConfig: JSONString
+  agentStatus: String!
+  createdAt: DateTime!
+  heartbeatAt: DateTime
+  hostname: String!
+  id: ID!
+  name: String!
+  runQueues: [ID!]!
+  stopPolling: Boolean!
+  updatedAt: DateTime
+  version: String
+}
+
+input LeaseJobSetItemInput {
+  agentId: ID!
+  jobSetId: ID!
+  jobSetItemId: ID!
+}
+
+type LeaseJobSetItemPayload {
+  success: Boolean!
+}
+
+type LicenseClaims {
+  expiresAt: Int64!
+  flags: [String!]!
+  seats: Int!
+  storageGigs: Int!
+  teams: Int!
+}
+
+type LicenseExpirationUI {
+  bannerDaysRemaining: Int!
+  bannerTotalDays: Int!
+  renewUrl: String
+}
+
+input LinkArtifactInput {
+  aliases: [ArtifactAliasInput!]
+  artifactID: ID
+  artifactPortfolioID: ID
+  artifactPortfolioName: String
+  clientID: ID
+  clientMutationId: String
+  entityName: String
+  projectName: String
+}
+
+type LinkArtifactPayload {
+  aliases: [ArtifactCollectionAlias!]!
+  artifactCollectionID: ID!
+  artifactID: ID!
+  clientMutationId: String
+  createdAt: DateTime!
+  versionIndex: Int
+}
+
+input LinkTeamToOrganizationInput {
+  clientMutationId: String
+  entityName: String!
+  organizationID: ID!
+}
+
+type LinkTeamToOrganizationPayload {
+  clientMutationId: String
+  success: Boolean!
+}
+
+type LocalLicense implements Node {
+  claims: LicenseClaims!
+  contactEmail: String!
+  createdAt: DateTime!
+  customerName: String!
+  expiresAt: DateTime!
+  generatedBy: User!
+  id: ID!
+  license: String!
+  notes: String
+  uid: String!
+  updatedAt: DateTime
+}
+
+type LocalVersionInfo {
+  latestVersionString: String!
+  outOfDate: Boolean!
+  versionOnThisInstanceString: String!
+}
+
+type LogLine {
+  id: String
+  level: String
+  line: String
+  number: Int
+  timestamp: String
+}
+
+type LogLineConnection {
+  edges: [LogLineEdge!]!
+  pageInfo: PageInfo!
+}
+
+type LogLineEdge {
+  cursor: String!
+  node: LogLine!
+}
+
+type Member {
+  accountType: String
+  admin: Boolean @deprecated(reason: "Use `role` instead.")
+  apiKey: String
+  email: String
+  id: String
+  memberRole: Role
+  name: String!
+  OAuthClients: [OAuthClient!]!
+  pending: Boolean
+  photoUrl: String
+  role: String
+  username: String
+}
+
+input MigrateOldHourOverageSubscriptionInput {
+  clientMutationId: String
+  organizationId: ID!
+}
+
+type MigrateOldHourOverageSubscriptionPayload {
+  clientMutationId: String
+  newSubscriptionID: String
+  oldSubscriptionID: String
+}
+
+input MigrateOldStorageSubscriptionInput {
+  clientMutationId: String
+  organizationId: ID!
+}
+
+type MigrateOldStorageSubscriptionPayload {
+  clientMutationId: String
+  newSubscriptionID: String
+  oldSubscriptionID: String
+}
+
+input ModifyRunsInput {
+  addTags: [String]
+  clientMutationId: String
+  entityName: String
+
+  """deprecated"""
+  filters: JSONString
+  ids: [String]
+  projectName: String
+  removeTags: [String]
+}
+
+type ModifyRunsPayload {
+  clientMutationId: String
+  runs: [Run]!
+  runsSQL: [Run]!
+}
+
+type MoveArtifactAliasAction implements ArtifactAction {
+  artifact: Artifact!
+  createdAt: DateTime!
+  destinationArtifact: Artifact
+  id: ID!
+  initiator: Initiator!
+}
+
+type MoveArtifactCollectionPayload {
+  artifactCollection: ArtifactCollection
+  clientMutationId: String
+}
+
+input MoveArtifactSequenceInput {
+  artifactSequenceID: ID!
+  clientMutationId: String
+  destinationArtifactTypeName: String!
+}
+
+input MoveProjectsInput {
+  clientMutationId: String
+  destinationEntityName: String!
+  notes: String
+  ownerUsername: String!
+  projectNames: [String!]
+  sourceEntityName: String!
+}
+
+type MoveProjectsPayload {
+  clientMutationId: String
+  tasks: [Task!]!
+}
+
+input MoveRunsInput {
+  clientMutationId: String
+  destinationEntityName: String!
+  destinationProjectName: String!
+  filters: JSONString!
+  sourceEntityName: String!
+  sourceProjectName: String!
+}
+
+type MoveRunsPayload {
+  clientMutationId: String
+  task: Task!
+}
+
+input MoveTagCategoryInput {
+  clientMutationID: String
+  newEntityName: String!
+  oldEntityName: String!
+  tagCategoryName: String!
+}
+
+input MoveTagInput {
+  clientMutationID: String
+  entityName: String!
+  newTagCategoryName: String!
+  oldTagCategoryName: String!
+  tagName: String!
+}
+
+input MoveViewInput {
+  clientMutationId: String
+  entityName: String!
+  id: ID!
+  projectName: String!
+}
+
+type MoveViewPayload {
+  clientMutationId: String
+  success: Boolean
+}
+
+type Mutation {
+  ackJobSetItem(input: AckJobSetItemInput!): AckJobSetItemPayload
+  ackRunQueueItem(input: AckRunQueueItemInput!): AckRunQueueItemPayload
+  addAliases(input: AddAliasesInput!): AddAliasesPayload
+
+  """
+  updateJob(input: UpdateJobInput!): UpdateJobPayload
+  deleteBucket(input: DeleteBucketInput!): DeleteBucketPayload
+  """
+  addFiles(input: AddFilesInput!): AddFilesPayload
+  addProtectedAliases(input: AddProtectedAliasesInput!): AddProtectedAliasesPayload
+  addRolePermissions(input: AddRolePermissionsInput!): AddRolePermissionsPayload
+  addUserToOrganization(input: AddUserToOrganizationInput!): AddUserToOrganizationPayload
+  addWorkflowsAdmin(input: AddWorkflowsAdminInput!): AddWorkflowsAdminPayload
+  agentHeartbeat(input: AgentHeartbeatInput!): AgentHeartbeatPayload
+  attachCustomerPaymentMethod(input: AttachCustomerPaymentMethodInput!): AttachCustomerPaymentMethodPayload
+  cancelCustomerSubscription(input: CancelCustomerSubscriptionInput!): CancelCustomerSubscriptionPayload
+  claimAnonymousEntity(input: ClaimAnonymousEntityInput!): ClaimAnonymousEntityPayload
+  cloneProjects(input: CloneProjectsInput!): CloneProjectsPayload
+  commitArtifact(input: CommitArtifactInput!): CommitArtifactPayload
+  completeMultipartUploadArtifact(input: CompleteMultipartUploadArtifactInput!): CompleteMultipartUploadArtifactPayload
+  contactUsForComputeHours(input: ContactUsForComputeHoursInput!): ContactUsForComputeHoursPayload
+  contactUsForUserLedTrial(input: ContactUsForUserLedTrialInput!): ContactUsForUserLedTrialPayload
+  copyFile(input: CopyFileInput!): CopyFilePayload
+  createAcademicOrReverseTrial(input: CreateAcademicOrReverseTrialInput!): CreateAcademicOrReverseTrialPayload
+  createAccessToken(input: CreateAccessTokenInput!): CreateAccessTokenPayload
+  createAgent(input: CreateAgentInput!): CreateAgentPayload
+  createAnonymousEntity(input: CreateAnonymousEntityInput!): CreateEntityPayload
+  createArtifact(input: CreateArtifactInput!): CreateArtifactPayload
+  createArtifactCollectionTagAssignments(input: CreateArtifactCollectionTagAssignmentsInput!): CreateTagsPayload
+  createArtifactFiles(input: CreateArtifactFilesInput!): CreateArtifactFilesPayload
+  createArtifactManifest(input: CreateArtifactManifestInput!): CreateArtifactManifestPayload
+  createArtifactPortfolio(input: CreateArtifactPortfolioInput!): CreateArtifactCollectionPayload
+  createArtifactSequence(input: CreateArtifactSequenceInput!): CreateArtifactCollectionPayload
+  createArtifactTagAssignments(input: CreateArtifactTagAssignmentsInput!): CreateTagsPayload
+  createArtifactType(input: CreateArtifactTypeInput!): CreateArtifactTypePayload @deprecated(reason: "Use createArtifactTypes instead")
+  createArtifactTypes(input: CreateArtifactTypesInput!): CreateArtifactTypesPayload
+  createAWSExternalID(input: CreateAWSExternalIDInput!): String!
+  createBenchmarkDiscussionComment(input: CreateBenchmarkDiscussionCommentInput!): CreateDiscussionCommentPayload
+  createBenchmarkDiscussionThread(input: CreateBenchmarkDiscussionThreadInput!): CreateDiscussionThreadPayload
+  createClient(input: CreateClientInput!): CreateClientPayload
+  createClientIDMapping(input: CreateClientIDMappingInput!): CreateClientIDMappingPayload
+  createCustomChart(input: CreateCustomChartInput!): CreateCustomChartPayload
+  createCustomerSubscription(input: CreateCustomerSubscriptionInput!): CreateCustomerSubscriptionPayload
+  createCustomerTrial(input: CreateCustomerTrialInput!): CreateCustomerTrialPayload
+  createDefaultResourceConfig(input: CreateDefaultResourceConfigInput!): CreateDefaultResourceConfigPayload
+  createEmailSubscription(input: CreateEmailSubscriptionInput!): CreateEmailSubscriptionPayload
+  createEntity(input: CreateEntityInput!): CreateEntityPayload
+  createExperiment(input: CreateExperimentInput!): CreateExperimentPayload
+  createFilterTrigger(input: CreateFilterTriggerInput!): CreateFilterTriggerPayload
+  createFinishedRunAlert(input: CreateFinishedRunAlertInput!): CreateAlertPayload
+  createGenericWebhookIntegration(input: CreateGenericWebhookIntegrationInput!): CreateIntegrationPayload
+  createGitHubOAuthIntegration(input: CreateGitHubOAuthIntegrationInput!): CreateIntegrationPayload
+  createGlueTask(input: CreateGlueTaskInput!): CreateGlueTaskPayload
+  createHourOverageSubscription(input: CreateHourOverageSubscriptionInput!): CreateHourOverageSubscriptionPayload
+  createInvite(input: CreateInviteInput!): CreateInvitePayload
+  createLaunchAgent(input: CreateLaunchAgentInput!): CreateLaunchAgentPayload
+  createLocalLicenseOrganization(input: CreateLocalLicenseOrganizationInput!): CreateLocalLicenseOrganizationPayload
+  createNewsletterSubscription(input: CreateNewsletterSubscriptionInput!): CreateNewsletterSubscriptionPayload
+  createOAuthProvider(input: CreateOAuthProviderInput!): CreateOAuthProviderPayload
+  createPreviewableLink(input: CreatePreviewableLinkInput!): CreatePreviewableLinkPayload
+  createProjectMembers(input: CreateProjectMembersInput!): CreateProjectMembersPayload
+  createRole(input: CreateRoleInput!): CreateRolePayload
+  createRunFiles(input: CreateRunFilesInput!): CreateRunFilesPayload
+  createRunQueue(input: CreateRunQueueInput!): CreateRunQueuePayload
+  createScriptableRunAlert(input: CreateScriptableRunAlertInput!): CreateAlertPayload
+  createServiceAccount(input: CreateServiceAccountInput!): CreateServiceAccountPayload
+  createSlackChannelSubscription(input: CreateSlackChannelSubscriptionInput!): CreateSlackChannelSubscriptionPayload
+  createSlackIntegration(input: CreateSlackIntegrationInput!): CreateIntegrationPayload
+  createStoppedRunAlert(input: CreateStoppedRunAlertInput!): CreateAlertPayload
+  createStorageSubscription(input: CreateStorageSubscriptionInput!): CreateStorageSubscriptionPayload
+
+  """
+  mutation to enable wandb admin to create teams given teamAdminUserName and new teamName
+  """
+  createTeam(input: CreateTeamInput!): CreateTeamPayload
+  createUser(input: CreateUserInput!): CreateUserPayload
+  createUserLedTrial(input: CreateUserLedTrialInput!): CreateUserLedTrialPayload
+  createViewCommentsAlertSubscription(input: CreateViewCommentsAlertSubscriptionInput!): CreateEmailSubscriptionPayload
+  createViewDiscussionComment(input: CreateViewDiscussionCommentInput!): CreateViewDiscussionCommentPayload
+  deleteAlert(input: DeleteAlertInput!): DeleteAlertPayload
+  deleteAlertSubscription(input: DeleteAlertSubscriptionInput!): DeleteAlertSubscriptionPayload
+  deleteAliases(input: DeleteAliasesInput!): DeleteAliasesPayload
+  deleteApiKey(input: DeleteApiKeyInput!): DeleteApiKeyPayload
+  deleteArtifact(input: DeleteArtifactInput!): DeleteArtifactPayload
+  deleteArtifactCollectionTagAssignments(input: DeleteArtifactCollectionTagAssignmentsInput!): DeleteTagAssignmentPayload
+  deleteArtifactEntityTTL(input: DeleteArtifactEntityTTLInput!): DeleteArtifactEntityTTLPayload
+  deleteArtifactPortfolio(input: DeleteArtifactPortfolioInput!): DeleteArtifactCollectionPayload
+  deleteArtifactSequence(input: DeleteArtifactSequenceInput!): DeleteArtifactCollectionPayload
+  deleteArtifactTagAssignments(input: DeleteArtifactTagAssignmentsInput!): DeleteTagAssignmentPayload
+  deleteCustomChart(input: DeleteCustomChartInput!): DeleteCustomChartPayload
+  deleteDefaultResourceConfigs(input: DeleteDefaultResourceConfigsInput!): DeleteDefaultResourceConfigsPayload
+  deleteDiscussionComment(input: DeleteDiscussionCommentInput!): DeleteDiscussionCommentPayload
+  deleteExperiment(input: DeleteExperimentInput!): DeleteExperimentPayload
+  deleteFiles(input: DeleteFilesInput!): DeleteFilesPayload
+  deleteFilesByRunAndFolder(input: DeleteFilesByRunAndFolderInput!): DeleteFilesPayload
+  deleteFromRunQueue(input: DeleteFromRunQueueInput!): DeleteFromRunQueuePayload
+  deleteGlueTask(input: DeleteGlueTaskInput!): DeleteGlueTaskPayload
+  deleteIntegration(input: DeleteIntegrationInput!): DeleteIntegrationPayload
+  deleteInvite(input: DeleteInviteInput!): DeleteInvitePayload
+  deleteLaunchAgents(input: DeleteLaunchAgentsInput!): DeleteLaunchAgentsPayload
+  deleteModel(input: DeleteModelInput!): DeleteModelPayload
+  deleteOAuthProvider(input: DeleteOAuthProviderInput!): DeleteOAuthProviderPayload
+  deleteOrganization(input: DeleteOrganizationInput!): DeleteOrganizationPayload
+  deleteOrganizationSubscription(input: DeleteOrganizationSubscriptionInput!): DeleteOrganizationSubscriptionPayload
+  deleteProjectMembers(input: DeleteProjectMembersInput!): DeleteProjectMembersPayload
+  deleteRole(input: DeleteRoleInput!): DeleteRolePayload
+  deleteRolePermissions(input: DeleteRolePermissionsInput!): DeleteRolePermissionsPayload
+  deleteRun(input: DeleteRunInput!): DeleteRunPayload
+  deleteRunQueues(input: DeleteRunQueuesInput!): DeleteRunQueuesPayload
+  deleteRuns(input: DeleteRunsInput!): DeleteRunsPayload
+  deleteSecret(input: DeleteSecretInput!): DeleteSecretPayload
+  deleteSweep(input: DeleteSweepInput!): DeleteSweepsPayload
+  deleteSweeps(input: DeleteSweepsInput!): DeleteSweepsPayload
+  deleteTeam(input: DeleteTeamInput!): DeleteTeamPayload
+  deleteTrigger(input: DeleteTriggerInput!): DeleteTriggerPayload
+  deleteUser(input: DeleteUserInput!): DeleteUserPayload
+  deleteUserEmail(input: DeleteUserEmailInput!): DeleteUserEmailPayload
+  deleteView(input: DeleteViewInput!): DeleteViewPayload
+  deleteViews(input: DeleteViewsInput!): DeleteViewsPayload
+  deleteWorkflowsAdmin(input: DeleteWorkflowsAdminInput!): DeleteWorkflowsAdminPayload
+  detachCustomerPaymentMethod(input: DetachCustomerPaymentMethodInput!): DetachCustomerPaymentMethodPayload
+  disableGlueTask(input: DisableGlueTaskInput!): DisableGlueTaskPayload
+  disableOldTrackingSubscription(input: DisableOldTrackingSubscriptionInput!): DisableOldTrackingSubscriptionPayload
+  enableGlueTask(input: EnableGlueTaskInput!): EnableGlueTaskPayload
+  failRunQueueItem(input: FailRunQueueItemInput!): FailRunQueueItemPayload
+  forceCleanArtifactStorageStats(input: ForceCleanArtifactStorageStatsInput!): ForceCleanArtifactStorageStatsPayload
+  forceCleanRunStorageStats(input: ForceCleanRunStorageStatsInput!): ForceCleanRunStorageStatsPayload
+  generateApiKey(input: GenerateApiKeyInput!): GenerateApiKeyPayload
+  generateLocalLicense(input: GenerateLocalLicenseInput!): GenerateLocalLicensePayload
+  insertGalleryDiscussion(input: InsertGalleryDiscussionInput!): InsertGalleryDiscussionPayload
+  insertSecret(input: InsertSecretInput!): InsertSecretPayload
+  leaseJobSetItem(input: LeaseJobSetItemInput!): LeaseJobSetItemPayload
+  linkArtifact(input: LinkArtifactInput!): LinkArtifactPayload
+  linkTeamToOrganization(input: LinkTeamToOrganizationInput!): LinkTeamToOrganizationPayload
+  migrateOldHourOverageSubscription(input: MigrateOldHourOverageSubscriptionInput!): MigrateOldHourOverageSubscriptionPayload
+  migrateOldStorageSubscription(input: MigrateOldStorageSubscriptionInput!): MigrateOldStorageSubscriptionPayload
+
+  """launchRun(input: LaunchRunInput!): LaunchRunPayload"""
+  modifyRuns(input: ModifyRunsInput!): ModifyRunsPayload
+  moveArtifactSequence(input: MoveArtifactSequenceInput!): MoveArtifactCollectionPayload
+  moveProjects(input: MoveProjectsInput!): MoveProjectsPayload
+  moveRuns(input: MoveRunsInput!): MoveRunsPayload
+  moveTag(input: MoveTagInput!): UpdateTagPayload
+  moveTagCategory(input: MoveTagCategoryInput!): UpdateTagCategoryPayload
+  moveView(input: MoveViewInput!): MoveViewPayload
+  notifyScriptableRunAlert(input: NotifyScriptableRunAlertInput!): NotifyScriptableRunAlertPayload
+  popFromRunQueue(input: PopFromRunQueueInput!): PopFromRunQueuePayload
+  publishBenchmarkRun(input: PublishBenchmarkRunInput!): PublishBenchmarkRunPayload
+  purgeUser(input: PurgeUserInput!): PurgeUserPayload
+  pushToRunQueue(input: PushToRunQueueInput!): PushToRunQueuePayload
+  pushToRunQueueByName(input: PushToRunQueueByNameInput!): PushToRunQueueByNamePayload
+  removeProtectedAliases(input: RemoveProtectedAliasesInput!): RemoveProtectedAliasesPayload
+  removeUserFromOrganization(input: RemoveUserFromOrganizationInput!): RemoveUserFromOrganizationPayload
+  removeUserFromOrganizationById(input: RemoveUserFromOrganizationByIdInput!): RemoveUserFromOrganizationByIdPayload
+  renameProject(input: RenameProjectInput!): UpsertModelPayload
+  resendEmailVerification(input: ResendEmailVerificationInput!): ResendEmailVerificationPayload
+  resetPassword(input: ResetPasswordInput!): ResetPasswordPayload
+  retryStripeOpenInvoicesByOrganization(input: RetryStripeOpenInvoicesByOrganizationInput!): RetryStripeOpenInvoicesByOrganizationPayload
+  revokeAccessToken(input: RevokeAccessTokenInput!): RevokeAccessTokenPayload
+  revokeAccessTokenEmail(input: RevokeAccessTokenEmailInput!): RevokeAccessTokenEmailPayload
+  revokeClient(input: RevokeClientInput!): RevokeClientPayload
+  rewindRun(input: RewindRunInput!): RewindRunPayload
+  sendRequestOrgEmailDomainVerification(input: SendRequestOrgEmailDomainVerificationInput!): SendRequestOrgEmailDomainVerificationPayload
+  setDismissedBanner(input: SetDismissedBannerInput!): SetDismissedBannerPayload
+  setTagColor(input: SetTagColorInput!): SetTagColorPayload
+  starProject(input: StarProjectInput!): StarProjectPayload
+  startExperiment(input: StartExperimentInput!): UpdateExperimentPayload
+  starView(input: StarViewInput!): StarViewPayload
+  stopExperiment(input: StopExperimentInput!): UpdateExperimentPayload
+  stopRun(input: StopRunInput!): StopRunPayload
+  submitBenchmarkRun(input: SubmitBenchmarkRunInput!): SubmitBenchmarkRunPayload
+  submitFCNews(input: SubmitFCNewsInput!): SubmitFCNewsPayload
+  testBucketStoreConnection(input: StorageBucketInfoInput!): [BucketStoreConnectionError!]!
+  testGenericWebhookIntegration(input: TestGenericWebhookIntegrationInput!): TestGenericWebhookIntegrationPayload
+  triggerParquetExport(input: TriggerParquetExportInput!): TriggerParquetExportPayload
+  undeleteRuns(input: UndeleteRunsInput!): UndeleteRunsPayload
+  undeleteUser(input: UndeleteUserInput!): UndeleteUserPayload
+  unlinkArtifact(input: UnlinkArtifactInput!): UnlinkArtifactPayload
+  unstarProject(input: UnstarProjectInput!): UnstarProjectPayload
+  unstarView(input: UnstarViewInput!): UnstarViewPayload
+  updateAccessToken(input: UpdateAccessTokenInput!): UpdateAccessTokenPayload
+  updateAccessTokenProjects(input: UpdateAccessTokenProjectsInput!): UpdateAccessTokenProjectsPayload
+  updateArtifact(input: UpdateArtifactInput!): UpdateArtifactPayload
+  updateArtifactEntityTTL(input: UpdateArtifactEntityTTLInput!): UpdateArtifactEntityTTLPayload
+  updateArtifactManifest(input: UpdateArtifactManifestInput!): UpdateArtifactManifestPayload
+  updateArtifactPortfolio(input: UpdateArtifactPortfolioInput!): UpdateArtifactCollectionPayload
+  updateArtifactSequence(input: UpdateArtifactSequenceInput!): UpdateArtifactCollectionPayload
+  updateArtifactType(input: UpdateArtifactTypeInput!): UpdateArtifactTypePayload
+  updateBenchmarkRun(input: UpdateBenchmarkRunInput!): UpdateBenchmarkRunPayload
+  updateCustomChart(input: UpdateCustomChartInput!): UpdateCustomChartPayload
+  updateCustomerDefaultPaymentMethod(input: UpdateCustomerDefaultPaymentMethodInput!): UpdateCustomerDefaultPaymentMethodPayload
+  updateCustomerPaymentMethod(input: UpdateCustomerPaymentMethodInput!): UpdateCustomerPaymentMethodPayload
+  updateDefaultResourceConfig(input: UpdateDefaultResourceConfigInput!): UpdateDefaultResourceConfigPayload
+  updateDiscussionComment(input: UpdateDiscussionCommentInput!): UpdateDiscussionCommentPayload
+  updateDiscussionThread(input: UpdateDiscussionThreadInput!): UpdateDiscussionThreadPayload
+  updateEntity(input: UpdateEntityInput!): UpdateEntityPayload
+  updateExperiment(input: UpdateExperimentInput!): UpdateExperimentPayload
+  updateGenericWebhookIntegration(input: UpdateGenericWebhookIntegrationInput!): CreateIntegrationPayload
+  updateGlueTask(input: UpdateGlueTaskInput!): UpdateGlueTaskPayload
+  updateLaunchAgent(input: UpdateLaunchAgentInput!): UpdateLaunchAgentPayload
+  updateLocalLicense(input: UpdateLocalLicenseInput!): UpdateLocalLicensePayload
+  updateMember(input: UpdateMemberInput!): UpdateMemberPayload
+  updateModelsSeat(input: UpdateModelsSeatInput!): UpdateModelsSeatPayload
+  updateOrganization(input: UpdateOrganizationInput!): UpdateOrganizationPayload
+  updateOrganizationBillingUser(input: UpdateOrganizationBillingUserInput!): UpdateOrganizationBillingUserPayload
+  updateOrganizationPrivacySettings(input: UpdateOrganizationPrivacySettingsInput!): UpdateOrganizationPrivacySettingsPayload
+  updateOrganizationSubscription(input: UpdateOrganizationSubscriptionInput!): UpdateOrganizationSubscriptionPayload
+  updateOrganizationSubscriptionSeats(input: UpdateOrganizationSubscriptionSeatsInput!): UpdateOrganizationSubscriptionSeatsPayload
+  updateOrganizationUser(input: UpdateOrganizationUserInput!): UpdateOrganizationUserPayload
+  updateOrganizationUserV2(input: UpdateOrganizationUserV2Input!): UpdateOrganizationUserV2Payload
+  updateProjectMember(input: UpdateProjectMemberInput!): UpdateProjectMemberPayload
+  updateRampThreshold(input: UpdateRampThresholdInput!): UpdateRampThresholdPayload
+  updateRole(input: UpdateRoleInput!): UpdateRolePayload
+  updateRunQueue(input: UpdateRunQueueInput!): UpdateRunQueuePayload
+  updateRunQueueItemWarning(input: UpdateRunQueueItemWarningInput!): UpdateRunQueueItemWarningPayload
+  updateStoppedRunAlert(input: UpdateStoppedRunAlertInput!): UpdateAlertPayload
+  updateSubscription(input: UpdateSubscriptionInput!): UpdateSubscriptionPayload
+  updateTag(input: UpdateTagInput!): UpdateTagPayload
+  updateTagCategory(input: UpdateTagCategoryInput!): UpdateTagCategoryPayload
+  updateUser(input: UpdateUserInput!): UpdateUserPayload
+  updateUserEmail(input: UpdateUserEmailInput!): UpdateUserEmailPayload
+  updateUserRole(input: UpdateUserRoleInput!): UpdateUserRolePayload
+  updateUserRoleV2(input: UpdateUserRoleV2Input!): UpdateUserRoleV2Payload
+  upgradeCustomerSubscription(input: UpgradeCustomerSubscriptionInput!): UpgradeCustomerSubscriptionPayload
+  upgradeTrialSubscription(input: upgradeTrialSubscriptionInput!): UpgradeTrialSubscriptionPayload
+  uploadPanel(input: UploadPanelInput!): UploadPanelPayload @deprecated(reason: "Use createPreviewableLink instead")
+  upsertBucket(input: UpsertBucketInput!): UpsertBucketPayload
+  upsertModel(input: UpsertModelInput!): UpsertModelPayload
+  upsertRunGroup(input: UpsertRunGroupInput!): UpsertRunGroupPayload
+  upsertRunQueue(input: UpsertRunQueueInput!): UpsertRunQueuePayload
+  upsertSharedView(input: UpsertSharedViewInput!): UpsertSharedViewPayload
+  upsertSweep(input: UpsertSweepInput!): UpsertSweepPayload
+  upsertView(input: UpsertViewInput!): UpsertViewPayload
+  useArtifact(input: UseArtifactInput!): UseArtifactPayload
+
+  """records a single view (page load) of a view (report)"""
+  viewView(input: ViewViewInput!): ViewViewPayload
+}
+
+type NewsletterSubscription {
+  createdAt: DateTime!
+  email: String
+  id: ID!
+  user: User
+}
+
+type NewsletterSubscriptionConnection {
+  edges: [NewsletterSubscriptionEdge!]!
+}
+
+type NewsletterSubscriptionEdge {
+  cursor: String!
+  node: NewsletterSubscription
+}
+
+interface Node {
+  id: ID!
+}
+
+input NotificationActionInput {
+  integrationID: ID!
+  message: String
+  severity: AlertSeverity
+  title: String
+}
+
+type NotificationTriggeredAction {
+  integration: Integration!
+  message: String
+  severity: AlertSeverity
+  title: String
+}
+
+input NotifyScriptableRunAlertInput {
+  clientMutationId: String
+  entityName: String!
+  projectName: String!
+  runName: String!
+  severity: AlertSeverity = INFO
+  text: String!
+  title: String!
+  waitDuration: Duration
+}
+
+type NotifyScriptableRunAlertPayload {
+  clientMutationId: String
+  success: Boolean!
+}
+
+type OAuthClient {
+  id: String!
+  subject: String!
+}
+
+type OAuthProvider {
+  id: ID!
+  issuerUrl: String!
+}
+
+enum ObservationalUnit {
+  USER
+  ANONYMOUS_USER
+  ORGANIZATION
+  TEAM
+}
+
+type OrgActivityTimeline implements ActivityDuration {
+  """start time for activity"""
+  endAt: DateTime!
+  numActiveUsers: Int!
+
+  """num of user active"""
+  startAt: DateTime!
+}
+
+type Organization implements Node {
+  activity(end: DateTime, start: DateTime): [OrgActivityTimeline!]!
+
+  """legacy: prefer artifactCollections"""
+  artifactCollections(after: String, before: String, collectionTypes: [ArtifactCollectionType!], filters: JSONString, first: Int, last: Int, order: String): ArtifactCollectionConnection
+  artifactSequences(after: String, before: String, filters: JSONString, first: Int, last: Int, limit: Int, offset: Int, order: String): ArtifactSequenceConnection
+  available: Boolean!
+  billingUser: User
+  createdAt: DateTime!
+  featureFlags(featureKey: String, rampIDType: RampIDType!): [FeatureFlag]!
+  flags: JSONString
+  id: ID!
+  latestRuns(userID: ID!): RunConnection
+  member(username: String): OrganizationMember
+  members: [OrganizationMember!]!
+  name: String!
+  OAuthProviders: [OAuthProvider!]!
+  orgEntity: Entity
+  orgType: OrgType!
+  pendingInvites: [Invite!]!
+  projects(after: String, before: String, first: Int, last: Int, order: String, pattern: String, userID: ID): ProjectConnection
+  roles: [Role!]!
+  seatAvailability: OrganizationSeatAvailability!
+  stripeBillingInfo: StripeBillingInfo
+  stripeInvoices: [StripeInvoice!]!
+  stripePaymentMethods: [StripePaymentMethod!]!
+  subscriptions: [OrganizationSubscription!]!
+  teams: [Entity!]!
+  usage(intervalMarkers: [DateTime!]!, usageType: UsageType!): [UsageAggregation!]!
+  usedSeats: Int!
+  usedViewOnlySeats: Int!
+  views(after: String, before: String, first: Int, last: Int, limit: Int, offset: Int, order: String, userID: ID): ViewConnection!
+}
+
+type OrganizationConnection {
+  edges: [OrganizationEdge!]!
+  pageInfo: PageInfo!
+}
+
+type OrganizationDataForFailedPaymentBanner {
+  billingEmail: String!
+  daysUntilCancellation: Int!
+  id: ID!
+  isBillingUser: Boolean!
+  isCollectionMethodACH: Boolean!
+  orgId: Int!
+  orgName: String!
+}
+
+type OrganizationEdge {
+  cursor: String!
+  node: Organization!
+}
+
+type OrganizationMember {
+  admin: Boolean!
+  email: String!
+  id: String!
+
+  """to avoid apollo cache collisions"""
+  modelsSeat: String!
+  name: String!
+  orgID: ID!
+  photoUrl: String!
+  role: String!
+  teams(after: String, before: String, first: Int, last: Int): EntityConnection
+  user: User!
+
+  """pending: Boolean -- TODO will need this soon."""
+  username: String!
+}
+
+type OrganizationSeatAvailability {
+  expiresAt: DateTime
+  seats: Int!
+  viewOnlySeats: Int!
+}
+
+type OrganizationSubscription {
+  availableSeatsToPurchase: Int!
+  billingPeriodEnd: DateTime
+  billingPeriodStart: DateTime
+  createdAt: DateTime!
+  expansionPacks(after: String, before: String, first: Int, last: Int): ExpansionPackConnection!
+  expiresAt: DateTime
+  id: ID!
+  isAutomaticUpgrade: Boolean!
+  nextPlans: [Plan!]!
+  plan: Plan!
+  privileges: JSON!
+  seats: Int!
+  status: OrganizationSubscriptionStatus!
+  stripeSubscriptionId: String
+  subscriptionType: OrganizationSubscriptionType!
+  thresholdCrossedAt: DateTime
+  upgradedAt: DateTime
+}
+
+enum OrganizationSubscriptionStatus {
+  ENABLED
+  DISABLED
+}
+
+enum OrganizationSubscriptionType {
+  STRIPE
+  ENTERPRISE
+  MANUAL_TRIAL
+  USER_LED_TRIAL
+  ACADEMIC_TRIAL
+  ACADEMIC
+  LOCAL
+  FREE_PLAN
+}
+
+enum OrgType {
+  ORGANIZATION
+  PERSONAL
+}
+
+type PageInfo {
+  endCursor: String
+  hasNextPage: Boolean!
+  hasPreviousPage: Boolean!
+  startCursor: String
+}
+
+type ParquetHistory {
+  liveData: [JSON!]!
+  parquetUrls: [String!]!
+}
+
+type PaymentMetadata {
+  orgName: String
+  shouldUpgradeToTeams: Boolean
+  username: String
+}
+
+type PaymentMethod {
+  cardType: String
+  endingIn: String
+  id: ID!
+  type: String!
+}
+
+type Plan {
+  billingInterval: String
+  defaultPrivileges: JSON!
+  displayName: String!
+  id: ID!
+  maxSeats: Int!
+  name: String!
+  planType: PlanType!
+  planVisibility: PlanVisibility!
+  stripePlanId: String
+  stripePrice: StripePrice
+  unitPrice: Int
+}
+
+enum PlanType {
+  PRIMARY
+  STORAGE
+  REFERENCE
+  HOUR_OVERAGE
+}
+
+enum PlanVisibility {
+  PUBLIC
+  PRIVATE
+  DEPRECATED
+}
+
+input PopFromRunQueueInput {
+  clientMutationId: String
+  entityName: String!
+  launchAgentId: ID
+  projectName: String!
+  queueName: String!
+}
+
+type PopFromRunQueuePayload {
+  clientMutationId: String
+  runQueueItemId: ID
+  runSpec: JSON
+}
+
+type PreviewableLink {
+  createdAt: DateTime!
+  id: ID!
+  resourceID: ID!
+  resourceType: PreviewableLinkResourceType!
+  updatedAt: DateTime
+  URL: String!
+}
+
+enum PreviewableLinkResourceType {
+  View
+  User
+  Entity
+}
+
+type PreviewFriendlyURL {
+  createdAt: DateTime!
+  id: ID!
+  updatedAt: DateTime
+  URL: String!
+  viewID: ID!
+}
+
+type Project implements Node {
+  access: String
+  allowAllArtifactTypesInRegistry: Boolean!
+
+  """
+  groups(fields: [String], level: String, filters: JSONString, order: String,
+  historyFields: [String], before: String, after: String, first: Int, last:
+  Int): GroupConnection
+  """
+  allViews(after: String, before: String, first: Int, last: Int, offset: Int, userId: Int, userName: String, viewName: String, viewType: String): ViewConnection
+  artifact(name: String!): Artifact
+  artifactCollection(name: String!): ArtifactCollection
+  artifactCollections(after: String, before: String, collectionTypes: [ArtifactCollectionType!], first: Int, last: Int, order: String): ArtifactCollectionConnection
+  artifacts(filters: JSONString): [Artifact!]!
+  artifactType(name: String!): ArtifactType
+  artifactTypes(after: String, before: String, first: Int, includeAll: Boolean, last: Int): ArtifactTypeConnection!
+  benchmarkDiscussionThreads(after: String, before: String, first: Int, last: Int): DiscussionThreadConnection!
+  benchmarkRuns(
+    after: String
+    before: String
+    first: Int
+    last: Int
+
+    """state is an enum of ACCEPTED/REJECTED/SUBMITTED"""
+    state: String!
+  ): BenchmarkRunConnection
+  benchmarkSubmissions(after: String, before: String, first: Int, last: Int): BenchmarkRunConnection
+  bucket(desc: String, missingOk: Boolean, name: String!): Run
+  bucketCount: Int
+  buckets(after: String, before: String, first: Int, jobKey: String, last: Int, names: [String], order: String): RunConnection
+  computeHours: Duration!
+  createdAt: DateTime!
+  defaultResourceConfigs(after: String, before: String, first: Int, last: Int): DefaultResourceConfigConnection
+  description: String
+  dockerImage: String
+  entity: Entity!
+  entityId: Int
+  entityName: String!
+  featured: Int
+  fields(after: String, before: String, columns: [String!], first: Int, last: Int, pattern: String, types: [String!]): ProjectFieldConnection!
+  fromV2: Boolean
+  gitHubSubmissionRepo: String
+  groupPath: String
+  id: ID!
+  internalId: ID!
+  isBenchmark: Boolean!
+  isPublished: Boolean!
+  lastActive: DateTime
+  launchAgents: [LaunchAgent!]!
+  linkedBenchmark: Project
+  media: String
+  members: [ProjectMember!]!
+  name: String!
+  ndbId: ID
+  parameterImportance(filters: JSONString, limit: Int, parameters: [String!], runParameters: [String!], target: String!): JSON!
+
+  """deprecated"""
+  pathCounts(filters: JSONString): JSONString
+  public: Boolean
+  rateLimits: RateLimits
+  readOnly: Boolean
+  repo: String
+  requestSubscribe: Boolean
+  run(desc: String, name: String!): Run
+  runActiveCount(filters: JSONString): Int!
+  runCount(filters: JSONString): Int!
+  runFieldValues(after: String, before: String, filters: JSONString, first: Int, keyPath: String!, last: Int, valuePattern: String): RunFieldValueConnection
+  runGroup(name: String!): RunGroup
+  runKeySuggestions(filters: JSONString, keyPath: String!): [RunKeySuggestion!]!
+
+  """deprecated"""
+  runOutputArtifactsCount(filters: JSONString): Int!
+  runQueue(id: ID, name: String): RunQueue
+  runQueues: [RunQueue!]!
+  runs(after: String, before: String, fields: [String], filters: JSONString, first: Int, groupAggregation: GroupAggregation, groupKeys: [String], groupLevel: Int, historyFields: [String], jobKey: String, last: Int, names: [String], order: String): RunConnection
+  runTags(after: String, before: String, first: Int, last: Int, pattern: String): RunTagConnection
+  starred: Boolean!
+  storageBytes: Int64!
+  subGroupPath: String
+  summaryMetrics: JSONString
+  sweep(sweepName: String!): Sweep
+  sweeps(after: String, before: String, first: Int, last: Int, order: String): SweepConnection
+  tagCounts(filters: JSONString): [RunTagCount!]!
+  tags: [RunTag!]! @deprecated(reason: "Use runTags instead")
+  totalArtifactCollections(collectionTypes: [ArtifactCollectionType!]): Int!
+  totalRuns: Int
+  totalRunsWithGroup: Int! @deprecated
+  totalRunsWithJobType: Int! @deprecated
+  totalRunTime: Float @deprecated(reason: "Use computeHours instead")
+  totalSweeps: Int!
+  totalUsers: Int
+  triggers(projectOnly: Boolean): [Trigger!]!
+  updatedAt: DateTime
+  user: User
+  userId: Int
+  valueCounts(filters: JSONString, keyPath: String): JSONString
+
+  """deprecated"""
+  views: JSONString
+  weavePermissions: ProjectPermissions!
+}
+
+type ProjectConnection {
+  edges: [ProjectEdge!]!
+  pageInfo: PageInfo!
+}
+
+type ProjectEdge {
+  cursor: String!
+  node: Project
+}
+
+type ProjectField {
+  path: String!
+  type: String!
+}
+
+type ProjectFieldConnection {
+  edges: [ProjectFieldEdge!]!
+  pageInfo: PageInfo!
+}
+
+type ProjectFieldEdge {
+  cursor: String!
+  node: ProjectField!
+}
+
+input ProjectIdentifierInput {
+  EntityName: String
+  Name: String
+}
+
+type ProjectMember {
+  accountType: String!
+  email: String
+  id: ID!
+  name: String
+  photoUrl: String
+  projectRoleIsInherited: Boolean!
+  role: Role!
+  username: String
+}
+
+type ProjectPermissions {
+  canRead: Boolean!
+  canWrite: Boolean!
+}
+
+input ProjectSpecifier {
+  entityName: String!
+  projectName: String!
+}
+
+type ProjectStorageNode implements StorageTreeNode {
+  artifactSequences(after: String, before: String, first: Int, last: Int): ArtifactSequenceStorageNodeConnection!
+  artifactTypes(after: String, before: String, first: Int, last: Int): [ArtifactTypeStorageNode!]!
+  id: ID!
+  name: String!
+  project: Project!
+  projectID: ID!
+  runs(after: String, before: String, first: Int, last: Int): RunStorageNodeConnection!
+  size: Int64!
+}
+
+type ProjectStorageNodeConnection {
+  edges: [ProjectStorageNodeEdge!]!
+  pageInfo: PageInfo!
+  totalSize: Int64!
+}
+
+type ProjectStorageNodeEdge {
+  cursor: String!
+  node: ProjectStorageNode!
+}
+
+type PublicImageUploadInfo {
+  imageUrl: String!
+  uploadHeaders: [String!]!
+  uploadUrl: String!
+}
+
+input PublishBenchmarkRunInput {
+  benchmarkEntityName: String
+  benchmarkName: String
+  clientMutationId: String
+  id: ID!
+  isCodeHidden: Boolean
+}
+
+type PublishBenchmarkRunPayload {
+  benchmarkRun: BenchmarkRun!
+  clientMutationId: String
+}
+
+input PurgeUserInput {
+  clientMutationId: String
+  email: String!
+  username: String!
+}
+
+type PurgeUserPayload {
+  clientMutationId: String
+  user: User
+}
+
+input PushToRunQueueByNameInput {
+  clientMutationId: String
+  entityName: String!
+  priority: Int
+  projectName: String!
+  queueName: String!
+  runSpec: JSONString!
+  templateVariableValues: JSONString
+}
+
+type PushToRunQueueByNamePayload {
+  clientMutationId: String
+  runQueueItemId: ID!
+  runSpec: JSONString!
+}
+
+input PushToRunQueueInput {
+  clientMutationId: String
+  priority: Int
+  queueID: ID!
+  runSpec: JSONString!
+  templateVariableValues: JSONString
+}
+
+type PushToRunQueuePayload {
+  clientMutationId: String
+  runQueueItemId: ID!
+  runSpec: JSONString!
+}
+
+type Query {
+  activeExperiments: [ActiveExperiment!]!
+  artifact(id: ID!): Artifact
+  artifactCollection(id: ID!): ArtifactCollection
+  artifactSequence(id: ID!): ArtifactSequence
+  benchmarks(after: String, before: String, entityName: String!, first: Int, last: Int, order: String): ProjectConnection
+  clientIDMapping(clientID: ID!): ClientIDMapping
+  customChart(id: ID!): CustomChart
+  customCharts(after: String, before: String, entity: String, first: Int, last: Int, type: String!, userName: String): CustomChartConnection
+  dataFrame(after: String, before: String, columns: [String!], dataFrameKeys: [String!]!, entityName: String!, filters: JSONString, first: Int, groupKeys: [String!], last: Int, order: String, projectName: String!): RowConnection
+  dataFrameSchema(dataFrameKeys: [String!]!, entityName: String!, projectName: String!): [JSON!]!
+  discussionComment(id: ID!): DiscussionComment
+  discussionThread(id: ID!): DiscussionThread
+  dismissedBanner(id: ID!): DismissedBanner
+  entities(after: String, before: String, first: Int, last: Int, order: String): EntityConnection
+  entity(login: Boolean, name: String): Entity
+  experiments: [Experiment!]!
+  failedPaymentBanners(id: ID!): FailedPaymentBanners
+  featuredReports: View
+  galleryTagSections: JSONString!
+  glueManager: GlueManager
+  glueRuns(after: String, before: String, first: Int, last: Int, taskID: ID!): GlueRunConnection
+  highQualityUserProfiles: View
+  invite(key: String!): Invite
+  jobSetDiff(agentID: ID!, fromVersion: Int, id: ID, selector: JobSetSelectorInput): JobSetDiff
+  launchAgent(id: ID!): LaunchAgent
+  localLicenses(expired: Boolean = false): [LocalLicense]!
+  model(entityName: String, name: String): Project @deprecated(reason: "use project")
+  models(after: String, batchSize: Int, before: String, entityName: String, first: Int, keysOnly: Boolean, last: Int, pageSize: Int): ProjectConnection
+  newsletterSubscriptions(after: String, before: String, first: Int, last: Int, order: String): NewsletterSubscriptionConnection
+  numPendingInvites: Int!
+  organization(id: ID, name: String): Organization
+  organizations(after: String, before: String, emailDomain: String, first: Int, ids: [ID!], last: Int, query: String, queryOrg: String, querySubId: String, queryTeam: String, queryUser: String): OrganizationConnection!
+  plans: [Plan]!
+  previewableLink(resourceID: ID!, resourceType: PreviewableLinkResourceType!): PreviewableLink
+  previewFriendlyURL(viewID: ID!): PreviewFriendlyURL @deprecated(reason: "Use previewableLink instead")
+  project(entityName: String, internalId: ID, name: String): Project
+  projects(
+    after: String
+
+    """option: last_active, id, created_at"""
+    anonymous: Boolean
+    before: String
+    entityName: String
+    first: Int
+
+    """supercedes other params, for profile page"""
+    internalIDs: [ID!]
+    last: Int
+    order: String
+    pattern: String
+    projectIDs: [ID!]
+  ): ProjectConnection
+  publicImageUploadUrl: PublicImageUploadInfo
+  publicViews(after: String, before: String, first: Int, last: Int, order: String, type: String): ViewConnection
+  publishedProjects(after: String, before: String, entityName: String!, first: Int, last: Int, order: String): ProjectConnection
+  rampManager: RampManager
+  repo(id: ID!): Repo
+  repoInsightsPlotData(after: String, before: String, columns: [String!], filters: JSONString, first: Int, groupKeys: [String!], last: Int, order: String, plotName: String!, repoName: String!): RepoInsightsRowConnection
+  reportSearch(query: String!): ViewConnection
+  serverInfo: ServerInfo
+  singletonView(type: String!): View
+  tag(entityName: String, tag: QueryTagInput!): Tag
+  task(id: ID!): Task
+  trendingRepos(after: String, before: String, first: Int, from: DateTime, last: Int): RowConnection
+  usage(intervalMarkers: [DateTime!]!, usageType: UsageType!): [UsageAggregation!]!
+  user(id: ID, userName: String): User
+  users(after: String, before: String, first: Int, ids: [ID!], last: Int, query: String, usernames: [String!]): UserConnection
+  view(id: ID!, type: String): View
+  viewer(entityName: String): User
+  viewParent(id: ID!): View
+  views(ids: [ID!]!): ViewConnection
+}
+
+input QueryTagInput {
+  tagCategoryName: String
+
+  """
+  new tag category name, allows alphanumeric chars, hyphens, underscores and spaces
+  """
+  tagName: String!
+}
+
+input QueueJobActionInput {
+  queueID: ID!
+  template: JSONString!
+}
+
+type QueueJobTriggeredAction {
+  queue: RunQueue
+  template: JSONString!
+}
+
+enum RampIDType {
+  """
+  this can be used for cases where the request is not
+  scoped to a specific entity, project or user
+  """
+  None
+
+  """
+  an example of a custom ID might be fmt.Sprintf("(%s,%d)", sweep.Name, sweep.ProjectID)
+  """
+  CustomID
+  EntityID
+  EntityName
+  OrgName
+  OrgID
+  UserID
+  UserName
+  ProjectID
+  ApiKey
+}
+
+type RampManager {
+  setting(name: String!): RampSettingEdge
+  settings: RampSettingConnection!
+}
+
+type RampSettingConnection {
+  edges: [RampSettingEdge!]!
+}
+
+type RampSettingEdge {
+  description: String!
+  group: String!
+  idIsRamped(id: String!): Boolean!
+  name: String!
+  rampIDType: RampIDType!
+  rampType: RampType!
+  stores: [RampThresholdStore!]!
+}
+
+type RampSettingThreshold {
+  checkId: String!
+  displayCheckID: String!
+  threshold: Float!
+}
+
+type RampThresholdStore {
+  name: String!
+  thresholds: [RampSettingThreshold!]!
+}
+
+enum RampType {
+  Backend
+  FrontendFeatureFlag
+  FrontendBetaFlag
+}
+
+type RateLimits {
+  filestreamCount: Int!
+  filestreamSize: Int!
+  graphql: Int!
+  sdkGraphql: Int!
+  sdkGraphqlQuerySeconds: Float!
+}
+
+input RateLimitsInput {
+  filestreamCount: Int
+  filestreamSize: Int
+  graphql: Int
+  sdkGraphql: Int
+  sdkGraphqlQuerySeconds: Float
+}
+
+input RemoveProtectedAliasesInput {
+  adminType: WorkflowsAdminType!
+  aliases: [String!]!
+  clientMutationID: String
+  entityName: String!
+}
+
+type RemoveProtectedAliasesPayload {
+  aliases: [String!]!
+}
+
+input RemoveUserFromOrganizationByIdInput {
+  clientMutationId: String
+  organizationId: ID!
+  userId: ID!
+}
+
+type RemoveUserFromOrganizationByIdPayload {
+  clientMutationId: String
+  success: Boolean!
+}
+
+input RemoveUserFromOrganizationInput {
+  clientMutationId: String
+  organizationId: ID!
+  userName: String!
+}
+
+type RemoveUserFromOrganizationPayload {
+  clientMutationId: String
+  success: Boolean!
+}
+
+input RenameProjectInput {
+  clientMutationId: String
+  entityName: String!
+  newProjectName: String!
+  oldProjectName: String!
+}
+
+type Repo implements Node {
+  displayName: String!
+  entity: Entity!
+  id: ID!
+}
+
+type RepoConnection {
+  edges: [RepoEdge!]!
+}
+
+type RepoEdge {
+  cursor: String!
+  node: Repo
+}
+
+type RepoInsightsRowConnection {
+  edges: [RowEdge!]!
+  isNormalizedUserCount: Boolean!
+  pageInfo: PageInfo!
+  schema: JSON!
+  totalCount: Int!
+}
+
+input ResendEmailVerificationInput {
+  clientMutationId: String
+  email: String!
+}
+
+type ResendEmailVerificationPayload {
+  clientMutationId: String
+  success: Boolean!
+}
+
+input ResetPasswordInput {
+  clientMutationId: String
+  email: String!
+}
+
+type ResetPasswordPayload {
+  success: Boolean!
+}
+
+input RetryStripeOpenInvoicesByOrganizationInput {
+  clientMutationId: String
+  organizationId: ID!
+}
+
+type RetryStripeOpenInvoicesByOrganizationPayload {
+  clientMutationId: String
+  success: Boolean!
+}
+
+input RevokeAccessTokenEmailInput {
+  clientMutationId: String
+  email: String!
+  token: String!
+}
+
+type RevokeAccessTokenEmailPayload {
+  accessToken: AccessToken!
+  clientMutationId: String
+  success: Boolean!
+}
+
+input RevokeAccessTokenInput {
+  clientMutationId: String
+  token: String!
+}
+
+type RevokeAccessTokenPayload {
+  clientMutationId: String
+  success: Boolean!
+}
+
+input RevokeClientInput {
+  clientId: String!
+  clientMutationId: String
+  entityName: String!
+}
+
+type RevokeClientPayload {
+  clientMutationId: String
+  success: Boolean!
+}
+
+input RewindRunInput {
+  clientMutationId: String
+  entityName: String
+  metricName: String!
+  metricValue: Float!
+  projectName: String
+  runName: String!
+}
+
+type RewindRunPayload {
+  clientMutationId: String
+  rewoundRun: Run
+}
+
+type Role {
+  description: String
+  ID: ID!
+  inheritedFrom: Role
+  name: String!
+  permissions: [RolePermission!]!
+}
+
+type RolePermission {
+  displayName: String!
+  groupName: String!
+  name: String!
+}
+
+type RowConnection {
+  edges: [RowEdge!]!
+  pageInfo: PageInfo!
+  schema: JSON!
+  totalCount: Int!
+}
+
+type RowEdge {
+  node: RowType
+}
+
+type RowType {
+  row: JSON!
+}
+
+type Run implements Node & BucketType {
+  agent: Agent
+  aggregations(keys: [String!]): JSON
+  artifactLineageDag(baseGraphNodeIDs: [String!], clusterSize: Int, directLineage: Boolean, filterGeneratedArtifacts: Boolean!, limit: Int!, traversalDirection: TraversalDirection): ArtifactLineageDag
+  benchmarkRun: BenchmarkRun
+  branchPoint: RunBranchPoint
+  bucketedHistory(packVersion: Int, specs: [JSONString!]!): [JSON!]!
+  commit: String
+  computeSeconds: Duration!
+  config(dotBehavior: DotBehavior = KEEP_ALL_DOT_VALUES, keys: [String!]): JSONString
+  createdAt: DateTime!
+  debug: Boolean
+  defaultColorIndex: Int
+  deletedAt: DateTime
+  description: String
+  displayName: String
+  events(samples: Int): [String!]!
+  eventsLineCount: Int
+  eventsTail: JSONString
+  exampleTable: JSONString
+  exampleTableColumns: JSONString
+  exampleTableTypes: JSONString
+  exitcode: Float
+  failed: Boolean
+  fileCount: Int
+  files(after: String, before: String, contentType: [String!], first: Int, folderPath: String, last: Int, names: [String], pattern: String): FileConnection
+  folders(folderPath: String): Folders
+  framework: String
+  github: String
+  group: String
+  groupCounts: [Int!]
+  heartbeatAt: DateTime
+  history(maxKeyLimit: Int, maxStep: Int64, minStep: Int64, samples: Int): [String!]!
+  historyKeys(format: HistoryKeysFormat = PLAINTEXT): JSON
+  historyLineCount: Int
+  historyTail: JSONString
+  host: String
+  id: ID!
+  inputArtifacts(after: String, before: String, filters: JSONString, first: Int, last: Int, order: String): InputArtifactConnection
+  internalID: ID
+  job: Artifact
+  jobId: Int
+  jobType: String
+  logLineCount: Int
+  logLines(after: String, before: String, first: Int, last: Int): LogLineConnection
+  model: Project
+  name: String!
+  ndbId: ID
+  notes: String
+  outputArtifacts(after: String, before: String, filters: JSONString, first: Int, last: Int, order: String): ArtifactConnection
+  parquetHistory(liveKeys: [String!]!): ParquetHistory!
+  patch: String
+  pendingUpdates: Boolean!
+  project: Project
+  projectId: ID!
+  readOnly: Boolean
+  requestSubscribe: Boolean
+  runInfo: RunInfo
+  running: Boolean
+  sampledHistory(packVersion: Int, specs: [JSONString!]!): [JSON!]!
+  servicesAvailable: RunServicesAvailable
+  shouldStop: Boolean
+  state: String
+  stepsForMetricValues(metric: String!, values: [Float!]!): [Int]!
+
+  """
+  if values[i] is out of the keysInfo range for that key, result[i] will be null
+  """
+  stopped: Boolean
+  storageBytes: Int64!
+  summaryMetrics(keys: [String!], packVersion: Int): JSONString
+  sweep: Sweep
+  sweepName: String
+  systemMetrics: JSONString
+  tagColors: [RunTag!]!
+  tags: [String!]
+  updatedAt: DateTime
+  user: User
+  userId: Int
+  wandbConfig(keys: [String!]): JSONString
+}
+
+type RunBranchPoint {
+  run: Run!
+  step: Int64!
+}
+
+type RunConnection {
+  delta(currentRuns: [String!]!, lastUpdated: DateTime!): [RunDiff!]!
+
+  """This is for bucketing RSDQs"""
+  deltas(currentRuns: [String!]!, lastUpdated: DateTime!): BucketDiffs
+  edges: [RunEdge!]!
+  historyKeys(format: HistoryKeysFormat = PLAINTEXT): JSON
+  pageInfo: PageInfo!
+  paths: JSONString
+  totalCount: Int!
+}
+
+type RunDiff {
+  index: Int!
+  op: DiffOperation!
+  run: Run
+}
+
+type RunEdge {
+  cursor: String!
+  node: Run!
+}
+
+type RunFieldValue {
+  value: JSONString
+}
+
+type RunFieldValueConnection {
+  edges: [RunFieldValueEdge!]!
+  pageInfo: PageInfo!
+}
+
+type RunFieldValueEdge {
+  cursor: String!
+  node: RunFieldValue!
+}
+
+type RunGroup {
+  id: ID!
+  name: String!
+  notes: String
+  project: Project!
+  tags: [RunTag!]!
+}
+
+type RunInfo {
+  args: [String!]!
+  codePath: String
+  codeSaved: Boolean
+  colab: String
+  cpuCount: Int
+  cpuCountLogical: Int
+  executable: String
+  git: GitInfo
+  gpu: String
+  gpuCount: Int
+  os: String
+  program: String
+  python: String
+}
+
+type RunKeySuggestion {
+  count: Int!
+  displayValue: JSONString
+  value: JSONString
+}
+
+type RunQueue {
+  access: RunQueueAccessType!
+  createdAt: DateTime!
+  createdBy: Int
+  defaultResourceConfig: DefaultResourceConfig
+  defaultResourceConfigID: ID
+  entityName: String!
+  executorInfo: String! @deprecated(reason: "Executor state tracked in LaunchAgent.AgentStatus")
+  externalLinks: JSON
+  id: ID!
+  name: String!
+  prioritizationMode: RunQueuePrioritizationMode!
+  runQueueItem(id: ID!): RunQueueItem
+  runQueueItems(after: String, before: String, first: Int, last: Int): RunQueueItemConnection!
+  updatedAt: DateTime
+}
+
+enum RunQueueAccessType {
+  PROJECT
+  USER
+}
+
+type RunQueueItem {
+  associatedRunId: String
+  createdAt: DateTime!
+  error: RunQueueItemInfoDetails
+  id: ID!
+  launchAgentId: ID
+  priority: Int!
+  runSpec: JSON!
+  state: RunQueueItemState!
+  templateVariableValues: JSON
+  updatedAt: DateTime
+  warnings: [RunQueueItemInfoDetails]!
+}
+
+type RunQueueItemConnection {
+  edges: [RunQueueItemEdge!]!
+  pageInfo: PageInfo!
+}
+
+type RunQueueItemEdge {
+  cursor: String!
+  node: RunQueueItem!
+}
+
+type RunQueueItemInfoDetails implements Error {
+  filePaths: [String!]!
+  message: String!
+  stage: String!
+}
+
+enum RunQueueItemState {
+  PENDING
+  LEASED
+  CLAIMED
+  FAILED
+}
+
+enum RunQueuePrioritizationMode {
+  DISABLED
+  V0
+}
+
+type RunServicesAvailable {
+  tensorboard: Boolean
+}
+
+type RunStorageNode implements StorageTreeNode {
+  files(after: String, before: String, first: Int, last: Int): FileStorageNodeConnection!
+  id: ID!
+  name: String!
+  run: Run!
+  runID: ID!
+  size: Int64!
+}
+
+type RunStorageNodeConnection {
+  edges: [RunStorageNodeEdge!]!
+  pageInfo: PageInfo!
+  totalSize: Int64!
+}
+
+type RunStorageNodeEdge {
+  cursor: String!
+  node: RunStorageNode!
+}
+
+type RunTag {
+  colorIndex: Int!
+  id: ID!
+  name: String!
+}
+
+type RunTagConnection {
+  edges: [RunTagEdge!]!
+  pageInfo: PageInfo!
+}
+
+type RunTagCount {
+  count: Int!
+  name: String!
+}
+
+type RunTagEdge {
+  cursor: String!
+  node: RunTag!
+}
+
+type ScriptableRunCondition {
+  """GraphQL doesn't allow empty types, so this always returns true"""
+  success: Boolean!
+}
+
+type Secret {
+  createdAt: DateTime!
+  entityId: Int!
+  name: String!
+}
+
+input SendRequestOrgEmailDomainVerificationInput {
+  clientMutationId: String
+  organizationID: ID!
+}
+
+type SendRequestOrgEmailDomainVerificationPayload {
+  clientMutationId: String
+  success: Boolean!
+}
+
+type ServerInfo {
+  actionHistoryLimit(artifactCollectionID: ID, entityName: String): Int!
+  availableBucketProviders: [CloudProvider!]!
+  availableCloudRegions: [CloudRegion!]!
+  cliVersionInfo: JSON!
+  contractStartDate: DateTime
+  dataRetentionDuration: Duration!
+  defaultCloudRegion: CloudRegion!
+  deploymentId: String
+  exposesExplicitRunQueueAckPath: Boolean!
+  frontendHost: String!
+  hasLocalLicense: Boolean!
+  isGoogleIap: Boolean!
+  latestLocalVersionInfo: LocalVersionInfo
+  licenseExpirationUI: LicenseExpirationUI
+  licenseFlags: [String!]!
+  messageOfTheDay: String
+  pollingOK: Boolean!
+  registeredModelLimitReached(entityName: String!): Boolean!
+  secureStorageConnectorEnabled: Boolean!
+  slackClientID: String!
+  streamTableEnabled: Boolean!
+  userLimitReached: Boolean!
+  viewOnlyUserLimitReached: Boolean!
+  weaveLimits: WeaveLimits
+}
+
+input SetDismissedBannerInput {
+  bannerID: ID!
+  clientMutationId: String
+}
+
+type SetDismissedBannerPayload {
+  clientMutationId: String
+  success: Boolean!
+}
+
+input SetTagColorInput {
+  clientMutationId: String
+  colorIndex: Int
+  entityName: String!
+  projectName: String!
+  tagName: String!
+}
+
+type SetTagColorPayload {
+  clientMutationId: String
+  tags: [RunTag!]!
+}
+
+type SlackChannelSubscription implements AlertSubscription {
+  id: ID!
+  slackIntegration: SlackIntegration!
+}
+
+type SlackIntegration implements Integration {
+  channelName: String!
+  id: ID!
+  teamName: String!
+}
+
+type StargazerConnection {
+  edges: [StargazerEdge!]!
+  pageInfo: PageInfo!
+}
+
+type StargazerEdge {
+  cursor: String!
+  node: User
+}
+
+input StarProjectInput {
+  clientMutationId: String
+  entityName: String!
+  projectName: String!
+}
+
+type StarProjectPayload {
+  clientMutationId: String
+  project: Project
+}
+
+input StartExperimentInput {
+  clientMutationId: String
+  id: ID!
+}
+
+input StarViewInput {
+  clientMutationId: String
+  id: ID!
+}
+
+type StarViewPayload {
+  clientMutationId: String
+  view: View
+}
+
+input StopExperimentInput {
+  clientMutationId: String
+  id: ID!
+}
+
+type StoppedRunCondition {
+  minimumRunDuration: Duration!
+}
+
+input StopRunInput {
+  clientMutationId: String
+  id: ID!
+}
+
+type StopRunPayload {
+  clientMutationId: String
+  success: Boolean!
+}
+
+type StorageBucketInfo {
+  awsExternalID: String
+  azureClientID: String
+  azureTenantID: String
+  ID: ID!
+  kmsKeyID: String
+  name: String!
+  path: String
+  provider: CloudProvider!
+}
+
+input StorageBucketInfoInput {
+  awsExternalID: String
+  azureClientID: String
+  azureTenantID: String
+  kmsKeyID: String
+  name: String!
+  organizationID: ID
+  path: String
+  provider: CloudProvider!
+}
+
+interface StorageTreeNode {
+  id: ID!
+  name: String!
+  size: Int64!
+}
+
+enum StorageUnit {
+  B
+  KB
+  MB
+  GB
+  TB
+  PB
+}
+
+type StripeBillingInfo {
+  cancelAtPeriodEnd: Boolean!
+  createdAt: DateTime!
+  currentPeriodEnd: DateTime!
+  currentPeriodStart: DateTime!
+  invoiceLink: String
+  paymentMetadata: PaymentMetadata
+  paymentMethod: PaymentMethod
+  status: String!
+  stripeSubscriptionId: String!
+}
+
+type StripeInvoice {
+  created: DateTime!
+  currency: String!
+  hostedInvoiceURL: String!
+  invoicePDF: String!
+  number: String!
+  status: StripeInvoiceStatus!
+  subscription: StripeSubscription
+  total: Int64!
+}
+
+enum StripeInvoiceStatus {
+  DRAFT
+  OPEN
+  PAID
+  UNCOLLECTIBLE
+  VOID
+}
+
+type StripePaymentMethod {
+  card: StripePaymentMethodCard!
+  isDefault: Boolean!
+  isFailed: Boolean!
+  stripePaymentMethodID: String!
+  type: StripePaymentMethodType!
+}
+
+type StripePaymentMethodCard {
+  brand: CardBrand!
+  last4: String!
+}
+
+enum StripePaymentMethodType {
+  CARD
+}
+
+type StripePrice {
+  amount: Int64!
+  currency: String!
+  interval: String
+}
+
+type StripeSubscription {
+  cancelAtPeriodEnd: Boolean!
+  createdAt: DateTime!
+  currentPeriodEnd: DateTime!
+  organizationSubscriptions: [OrganizationSubscription!]!
+  status: String!
+}
+
+input SubmitBenchmarkRunInput {
+  benchmarkEntityName: String
+  benchmarkName: String
+  clientMutationId: String
+  id: ID!
+  isCodeHidden: Boolean
+}
+
+type SubmitBenchmarkRunPayload {
+  benchmarkRun: BenchmarkRun!
+  clientMutationId: String
+}
+
+input SubmitFCNewsInput {
+  clientMutationId: String
+  details: String
+  email: String!
+  name: String!
+  url: String!
+}
+
+type SubmitFCNewsPayload {
+  clientMutationId: String
+  success: Boolean!
+}
+
+type Sweep implements Node {
+  agent(agentName: String!): Agent
+  agents: AgentConnection!
+  bestLoss: Float
+  config: String!
+  controller: JSONString
+  controllerRunName: String!
+  createdAt: DateTime!
+
+  """TODO: enum?"""
+  description: String
+  displayName: String
+  earlyStopJobRunning: Boolean!
+  heartbeatAt: DateTime!
+  id: ID!
+  method: String!
+  name: String!
+  priorRuns: RunConnection!
+  project: Project
+  runCount: Int!
+
+  """
+  The number of runs that should be in the sweep when it completes. Grid search only.
+  """
+  runCountExpected: Int
+
+  """TODO: non-null?"""
+  runs(after: String, before: String, first: Int, last: Int, order: String): RunConnection!
+  runTime: Int!
+  scheduler: JSONString
+
+  """TODO: enum?"""
+  state: String!
+  updatedAt: DateTime
+  user: User
+}
+
+type SweepConnection {
+  edges: [SweepEdge!]!
+  pageInfo: PageInfo!
+}
+
+type SweepEdge {
+  cursor: String!
+  node: Sweep!
+}
+
+type Tag {
+  attributes: JSONString!
+  id: ID!
+  name: String!
+  objects(after: String, before: String, first: Int, last: Int, objectType: TaggedObjectType): TaggedObjectConnection
+  tagCategory: TagCategory
+  tagCategoryName: String!
+}
+
+type TagCategory {
+  group: TagGroup!
+  id: ID!
+  name: String!
+  tags(after: String, before: String, first: Int, last: Int): TagConnection!
+}
+
+type TagConnection {
+  edges: [TagEdge!]!
+  pageInfo: PageInfo!
+}
+
+type TagEdge {
+  cursor: String!
+  node: Tag!
+}
+
+union TaggedObject = ArtifactSequence | ArtifactPortfolio | Artifact
+
+type TaggedObjectConnection {
+  edges: [TaggedObjectEdge!]!
+  pageInfo: PageInfo!
+}
+
+type TaggedObjectEdge {
+  cursor: String!
+  node: TaggedObject!
+}
+
+enum TaggedObjectType {
+  ARTIFACT_COLLECTION
+  ARTIFACT
+}
+
+union TagGroup = Entity
+
+input TagInput {
+  """
+  new tag name, allows alphanumeric chars, hyphens, underscores and spaces
+  """
+  attributes: JSONString
+  tagCategoryName: String
+
+  """
+  new tag category name, allows alphanumeric chars, hyphens, underscores and spaces
+  """
+  tagName: String!
+}
+
+type Task {
+  createdAt: DateTime!
+  id: ID!
+  name: String!
+  progress: Int!
+  state: TaskState!
+  type: String!
+  updatedAt: DateTime
+}
+
+enum TaskState {
+  PENDING
+  RUNNING
+  FINISHED
+  FAILED
+}
+
+type TemplateVariable {
+  description: String
+  name: String!
+  schema: JSONString!
+}
+
+input TestGenericWebhookIntegrationInput {
+  accessTokenRef: String
+  clientMutationID: String
+  entityName: String!
+  requestPayload: JSONString
+  secretRef: String
+  urlEndpoint: String!
+}
+
+type TestGenericWebhookIntegrationPayload {
+  clientMutationID: String
+  ok: Boolean!
+  response: JSONString!
+}
+
+input TimeWindow {
+  end: DateTime!
+  start: DateTime!
+}
+
+enum TraversalDirection {
+  UPSTREAM
+  DOWNSTREAM
+}
+
+type Trigger {
+  createdAt: DateTime!
+  createdBy: User!
+  description: String
+  enabled: Boolean!
+  id: ID!
+  name: String!
+  scope: TriggerScope!
+  triggeredAction: TriggeredAction!
+  triggeringCondition: TriggeringCondition!
+  updatedAt: DateTime
+}
+
+type TriggerConnection {
+  edges: [TriggerEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+"""
+type CronTriggeringCondition {
+  schedule: CronSchedule!
+  filter: String # when would this be used?
+}
+"""
+union TriggeredAction = QueueJobTriggeredAction | NotificationTriggeredAction | GenericWebhookTriggeredAction
+
+input TriggeredActionConfig {
+  genericWebhookActionInput: GenericWebhookActionInput
+  notificationActionInput: NotificationActionInput
+  queueJobActionInput: QueueJobActionInput
+}
+
+enum TriggeredActionType {
+  QUEUE_JOB
+  NOTIFICATION
+  GENERIC_WEBHOOK
+}
+
+type TriggerEdge {
+  cursor: String!
+  node: Trigger!
+}
+
+union TriggeringCondition = FilterEventTriggeringCondition
+
+input TriggerParquetExportInput {
+  clientMutationId: String
+  runId: ID!
+}
+
+type TriggerParquetExportPayload {
+  clientMutationId: String
+  task: Task!
+}
+
+union TriggerScope = Project | ArtifactSequence | ArtifactPortfolio
+
+enum TriggerScopeType {
+  PROJECT
+  ARTIFACT_COLLECTION
+}
+
+input UndeleteRunsInput {
+  clientMutationId: String
+  entityName: String!
+  filters: JSONString!
+  projectName: String!
+}
+
+type UndeleteRunsPayload {
+  clientMutationId: String
+}
+
+input UndeleteUserInput {
+  clientMutationId: String
+  id: ID!
+}
+
+type UndeleteUserPayload {
+  clientMutationId: String
+  user: User
+}
+
+input UnlinkArtifactInput {
+  artifactID: ID!
+  artifactPortfolioID: ID!
+  clientMutationId: String
+}
+
+type UnlinkArtifactPayload {
+  artifactID: ID!
+  clientMutationId: String
+  success: Boolean!
+}
+
+input UnstarProjectInput {
+  clientMutationId: String
+  entityName: String!
+  projectName: String!
+}
+
+type UnstarProjectPayload {
+  clientMutationId: String
+  project: Project
+}
+
+input UnstarViewInput {
+  clientMutationId: String
+  id: ID!
+}
+
+type UnstarViewPayload {
+  clientMutationId: String
+  view: View
+}
+
+input UpdateAccessTokenInput {
+  clientMutationId: String
+  email: String
+  previewURL: String
+  token: String!
+  username: String
+}
+
+type UpdateAccessTokenPayload {
+  accessToken: AccessToken!
+  clientMutationId: String
+  recipientAlreadyOnTeam: Boolean
+  success: Boolean!
+  toNewUser: Boolean
+}
+
+input UpdateAccessTokenProjectsInput {
+  clientMutationId: String
+  projects: [ProjectSpecifier!]!
+  token: String!
+}
+
+type UpdateAccessTokenProjectsPayload {
+  clientMutationId: String
+  success: Boolean!
+}
+
+type UpdateAlertPayload {
+  alert: Alert!
+  clientMutationId: String
+}
+
+type UpdateArtifactAction implements ArtifactAction {
+  artifact: Artifact!
+  createdAt: DateTime!
+  id: ID!
+  initiator: Initiator!
+  newAliases: [ArtifactAlias!]
+  newDescription: String
+  newMetadata: JSONString
+  newTags: JSONString @deprecated
+  oldAliases: [ArtifactAlias!]
+  oldDescription: String
+  oldMetadata: JSONString
+  oldTags: JSONString @deprecated
+}
+
+type UpdateArtifactCollectionPayload {
+  artifactCollection: ArtifactCollection!
+  clientMutationId: String
+}
+
+input UpdateArtifactEntityTTLInput {
+  clientMutationId: String
+  entityName: String!
+  ttlDurationSeconds: Int64!
+}
+
+type UpdateArtifactEntityTTLPayload {
+  clientMutationId: String
+}
+
+input UpdateArtifactInput {
+  aliases: [ArtifactAliasInput!]
+  artifactID: ID!
+  clientMutationId: String
+  description: String
+  labels: JSONString
+  metadata: JSONString
+  tagsToAdd: [TagInput!]
+  tagsToDelete: [TagInput!]
+  ttlDurationSeconds: Int64
+}
+
+input UpdateArtifactManifestInput {
+  artifactManifestID: ID!
+  baseArtifactID: ID
+  clientMutationId: String
+  digest: String
+}
+
+type UpdateArtifactManifestPayload {
+  artifactManifest: ArtifactManifest!
+  clientMutationId: String
+}
+
+type UpdateArtifactPayload {
+  artifact: Artifact!
+  artifactActions: [ArtifactAction!]!
+  clientMutationId: String
+}
+
+input UpdateArtifactPortfolioInput {
+  artifactPortfolioID: ID!
+  clientMutationId: String
+  description: String
+  name: String
+}
+
+input UpdateArtifactSequenceInput {
+  artifactSequenceID: ID!
+  clientMutationId: String
+  description: String
+  name: String
+}
+
+input UpdateArtifactTypeInput {
+  artifactTypeID: ID!
+  clientMutationId: String
+  description: String
+}
+
+type UpdateArtifactTypePayload {
+  artifactType: ArtifactType!
+  clientMutationId: String
+}
+
+input UpdateBenchmarkRunInput {
+  clientMutationId: String
+  details: JSONString
+  id: ID!
+  state: String
+}
+
+type UpdateBenchmarkRunPayload {
+  benchmarkRun: BenchmarkRun!
+  clientMutationId: String
+}
+
+input UpdateCustomChartInput {
+  access: String
+  clientMutationId: String
+  displayName: String
+  entity: String!
+  name: String!
+  spec: JSONString
+  type: String
+}
+
+type UpdateCustomChartPayload {
+  chart: CustomChart!
+  clientMutationId: String
+}
+
+input UpdateCustomerDefaultPaymentMethodInput {
+  clientMutationId: String
+  organizationId: ID!
+  paymentMethod: String!
+}
+
+type UpdateCustomerDefaultPaymentMethodPayload {
+  clientMutationId: String
+  success: Boolean
+}
+
+input UpdateCustomerPaymentMethodInput {
+  clientMutationId: String
+  organizationId: ID!
+  paymentMethod: String!
+}
+
+type UpdateCustomerPaymentMethodPayload {
+  clientMutationId: String
+  success: Boolean
+}
+
+input UpdateDefaultResourceConfigInput {
+  clientMutationId: String
+  config: JSONString!
+  defaultResourceConfigID: ID!
+  entityName: String
+  projectName: String
+  resource: String
+  templateVariables: JSONString
+}
+
+type UpdateDefaultResourceConfigPayload {
+  defaultResourceConfigID: ID!
+  schemaValidationErrors: [String!]
+  success: Boolean!
+}
+
+input UpdateDiscussionCommentInput {
+  body: String!
+  clientMutationId: String
+  discussionCommentID: ID!
+  inlineCommentDetails: JSONString
+  viewID: ID
+}
+
+type UpdateDiscussionCommentPayload {
+  clientMutationId: String
+  discussionComment: DiscussionComment!
+}
+
+input UpdateDiscussionThreadInput {
+  body: String!
+  clientMutationId: String
+  discussionThreadID: ID!
+}
+
+type UpdateDiscussionThreadPayload {
+  clientMutationId: String
+  discussionThread: DiscussionThread!
+}
+
+input UpdateEntityInput {
+  clientMutationId: String
+  codeSavingEnabled: Boolean
+  defaultAccess: String
+  entity: String!
+  isPaid: Boolean
+  photoUrl: String
+  privateOnly: Boolean
+  rateLimits: RateLimitsInput
+  settings: EntitySettingsInput
+}
+
+type UpdateEntityPayload {
+  clientMutationId: String
+  entity: Entity
+}
+
+input UpdateExperimentInput {
+  clientMutationId: String
+  enrollmentPeriod: Int!
+  experimentType: ExperimentType!
+  id: ID!
+  metadata: JSONString
+  name: String!
+  observationalUnit: ObservationalUnit!
+  sampleSize: Int!
+  variants: [VariantInput!]!
+}
+
+type UpdateExperimentPayload {
+  clientMutationId: String
+  id: ID!
+  success: Boolean!
+}
+
+input UpdateGenericWebhookIntegrationInput {
+  accessTokenRef: String
+  clientMutationId: String
+  id: ID!
+  name: String
+  secretRef: String
+  urlEndpoint: String
+}
+
+input UpdateGlueTaskInput {
+  arguments: JSONString
+  checkpoint: JSONString
+  clientMutationId: String
+  id: ID!
+  name: String
+  status: String
+  strategyMetadata: String
+  strategyType: String
+}
+
+type UpdateGlueTaskPayload {
+  clientMutationId: String
+  success: Boolean!
+}
+
+input UpdateLaunchAgentInput {
+  agentStatus: String
+  clientMutationId: String
+  heartbeatAt: DateTime
+  launchAgentId: ID!
+  name: String
+  runQueues: [ID!]
+  stopPolling: Boolean
+}
+
+type UpdateLaunchAgentPayload {
+  clientMutationId: String
+  success: Boolean
+}
+
+input UpdateLocalLicenseInput {
+  clientMutationId: String
+  id: ID!
+  notes: String
+}
+
+type UpdateLocalLicensePayload {
+  clientMutationId: String
+  localLicense: LocalLicense!
+}
+
+input UpdateMemberInput {
+  admin: Boolean
+  clientMutationId: String
+  entityName: String!
+  role: String
+  user: ID!
+}
+
+type UpdateMemberPayload {
+  clientMutationId: String
+  member: Member!
+}
+
+input UpdateModelsSeatInput {
+  clientMutationId: String
+  modelsSeat: String!
+  organizationId: ID!
+  userId: ID!
+}
+
+type UpdateModelsSeatPayload {
+  clientMutationId: String
+  success: Boolean!
+}
+
+input UpdateOrganizationBillingUserInput {
+  clientMutationId: String
+  newBillingUser: ID!
+  organizationId: ID!
+}
+
+type UpdateOrganizationBillingUserPayload {
+  clientMutationId: String
+  success: Boolean!
+}
+
+input UpdateOrganizationInput {
+  clientMutationId: String
+  flags: JSONString
+  name: String
+  organizationID: ID!
+}
+
+type UpdateOrganizationPayload {
+  clientMutationId: String
+  success: Boolean!
+}
+
+input UpdateOrganizationPrivacySettingsInput {
+  clientMutationId: String
+  codeSavingDisabled: Boolean
+  disableMagicLinkSharing: Boolean
+  hidden: Boolean
+  onlyAdminsCanInvite: Boolean
+  organizationId: ID!
+  privateOnly: Boolean
+  restrictMatchingOrgEmailDomainUsers: Boolean
+}
+
+type UpdateOrganizationPrivacySettingsPayload {
+  clientMutationId: String
+  success: Boolean!
+}
+
+input UpdateOrganizationSubscriptionInput {
+  clientMutationId: String
+  createStripeSubscription: Boolean = false
+  expiresAt: DateTime
+  organizationSubscriptionID: ID!
+  planID: ID
+  privileges: JSONString
+  seats: Int
+  status: OrganizationSubscriptionStatus
+  stripeSubscriptionId: String
+  type: OrganizationSubscriptionType
+}
+
+type UpdateOrganizationSubscriptionPayload {
+  clientMutationId: String
+  success: Boolean!
+}
+
+input UpdateOrganizationSubscriptionSeatsInput {
+  clientMutationId: String
+  organizationID: ID!
+  seats: Int!
+}
+
+type UpdateOrganizationSubscriptionSeatsPayload {
+  clientMutationId: String
+  success: Boolean!
+}
+
+input UpdateOrganizationUserInput {
+  clientMutationId: String
+  organizationId: ID!
+  userName: String!
+  userOrgRole: String!
+}
+
+type UpdateOrganizationUserPayload {
+  clientMutationId: String
+  success: Boolean!
+}
+
+input UpdateOrganizationUserV2Input {
+  clientMutationId: String
+  organizationId: ID!
+  userName: String!
+  userOrgRole: String!
+}
+
+type UpdateOrganizationUserV2Payload {
+  clientMutationId: String
+  success: Boolean!
+}
+
+input UpdateProjectMemberInput {
+  clientMutationId: String
+  projectId: ID!
+  userId: ID!
+  userProjectRole: String!
+}
+
+type UpdateProjectMemberPayload {
+  clientMutationId: String
+  success: Boolean!
+}
+
+input UpdateRampThresholdInput {
+  checkId: String!
+  clientMutationId: String
+  setting: String!
+  store: String!
+  threshold: Float!
+}
+
+type UpdateRampThresholdPayload {
+  clientMutationId: String
+  success: Boolean!
+}
+
+input UpdateRoleInput {
+  description: String
+  inheritedFrom: String
+  name: String
+  roleID: ID!
+}
+
+type UpdateRolePayload {
+  success: Boolean!
+}
+
+input UpdateRunQueueInput {
+  clientMutationId: String
+  defaultResourceConfigID: ID
+  externalLinks: JSONString
+  prioritizationMode: RunQueuePrioritizationMode
+  queueID: ID!
+}
+
+input UpdateRunQueueItemWarningInput {
+  clientMutationId: String
+  filePaths: [String!]
+  message: String!
+  runQueueItemId: ID!
+  stage: String!
+}
+
+type UpdateRunQueueItemWarningPayload {
+  clientMutationId: String
+  success: Boolean
+}
+
+type UpdateRunQueuePayload {
+  clientMutationId: String
+  queueID: ID
+  success: Boolean
+}
+
+input UpdateStoppedRunAlertInput {
+  clientMutationId: String
+  id: ID!
+  minimumRunDuration: Duration
+}
+
+input UpdateSubscriptionInput {
+  clientMutationId: String
+  entityName: String!
+  gpuEnabled: DateTime
+  hubPreset: String
+  hubSettings: HubSettingsInput
+  privateProjects: Boolean
+  teamsEnabled: Boolean
+}
+
+type UpdateSubscriptionPayload {
+  clientMutationId: String
+  entity: Entity
+}
+
+input UpdateTagCategoryInput {
+  clientMutationID: String
+  entityName: String!
+  newTagCategoryName: String
+  oldTagCategoryName: String!
+}
+
+type UpdateTagCategoryPayload {
+  clientMutationID: String
+  tagCategory: TagCategory!
+}
+
+input UpdateTagInput {
+  attributes: JSONString
+  clientMutationID: String
+  entityName: String!
+  newTagName: String
+  oldTagName: String!
+  tagCategoryName: String!
+}
+
+type UpdateTagPayload {
+  clientMutationID: String
+  tag: Tag!
+}
+
+input UpdateUserEmailInput {
+  id: ID!
+  type: EmailType
+}
+
+type UpdateUserEmailPayload {
+  email: Email
+  success: Boolean!
+}
+
+input UpdateUserInput {
+  admin: Boolean
+  clientMutationId: String
+  code: String
+  defaultEntity: String
+  defaultFramework: String
+  galleryVisited: Boolean
+  hideTeamsFromPublic: Boolean
+  id: ID
+  name: String
+  onboardingHidden: Boolean
+  password: String
+
+  """deprecated"""
+  photoUrl: String
+
+  """null implies "self" -- only admins can edit others"""
+  primaryEmail: String
+  private: Boolean
+  settingsVisited: Boolean
+  userInfo: JSONString
+}
+
+type UpdateUserPayload {
+  clientMutationId: String
+  user: User
+}
+
+input UpdateUserRoleInput {
+  accountType: String!
+  clientMutationId: String
+  id: ID!
+}
+
+type UpdateUserRolePayload {
+  clientMutationId: String
+  user: User
+}
+
+input UpdateUserRoleV2Input {
+  accountType: String!
+  clientMutationId: String
+  id: ID!
+}
+
+type UpdateUserRoleV2Payload {
+  clientMutationId: String
+  user: User
+}
+
+input UpgradeCustomerSubscriptionInput {
+  clientMutationId: String
+  organizationID: ID!
+  paymentMethod: String!
+  planID: ID!
+  quantity: Int!
+}
+
+type UpgradeCustomerSubscriptionPayload {
+  clientMutationId: String
+  organizationID: ID!
+  subscription: JSON
+}
+
+input upgradeTrialSubscriptionInput {
+  clientMutationId: String
+  organizationID: ID!
+  planID: ID!
+}
+
+type UpgradeTrialSubscriptionPayload {
+  clientMutationId: String
+  success: Boolean!
+}
+
+type UploadMultipartUrls {
+  uploadID: String!
+  uploadUrlParts: [UploadUrlPart!]!
+}
+
+input UploadPanelInput {
+  author: String!
+  clientMutationId: String
+  description: String!
+  entityName: String!
+  panelID: String!
+  redirectURL: String!
+  title: String!
+  viewID: ID!
+}
+
+type UploadPanelPayload {
+  clientMutationId: String
+  panelImageUploadUrl: String!
+  panelLink: String!
+  success: Boolean!
+}
+
+input UploadPartsInput {
+  hexMD5: String!
+  partNumber: Int64!
+}
+
+type UploadUrlPart {
+  partNumber: Int64!
+  uploadUrl: String!
+}
+
+input UpsertBucketInput {
+  clientMutationId: String
+  commit: String
+
+  """deprecated"""
+  config: JSONString
+  debug: Boolean
+  description: String
+  displayName: String
+  entityName: String
+  framework: String
+  groupName: String
+  host: String
+  id: String
+  jobProgram: String
+  jobRepo: String
+  jobType: String
+  modelName: String
+  name: String
+  notes: String
+  runQueueItemId: ID
+  state: String
+  summaryMetrics: JSONString
+  sweep: String
+  tags: [String]
+}
+
+type UpsertBucketPayload {
+  bucket: Run
+  clientMutationId: String
+  inserted: Boolean
+  updateAvailable: Boolean
+}
+
+input UpsertModelInput {
+  access: String
+  allowAllArtifactTypesInRegistry: Boolean
+  clientMutationId: String
+  description: String
+  dockerImage: String
+
+  """deprecated"""
+  entityName: String
+  framework: String
+  id: String
+  isBenchmark: Boolean
+  isPublished: Boolean
+  linkedBenchmark: ID
+  name: String
+  owner: ID
+  rateLimits: RateLimitsInput
+  repo: String
+  views: JSONString
+}
+
+type UpsertModelPayload {
+  clientMutationId: String
+  entityName: String
+  inserted: Boolean
+  model: Project
+  project: Project
+}
+
+input UpsertRunGroupInput {
+  clientMutationId: String
+  entityName: String!
+  name: String!
+  newName: String
+  notes: String
+  projectName: String!
+  tags: [String!]
+}
+
+type UpsertRunGroupPayload {
+  clientMutationId: String
+  group: RunGroup
+  inserted: Boolean
+}
+
+input UpsertRunQueueInput {
+  clientMutationId: String
+  entityName: String!
+  externalLinks: JSONString
+  prioritizationMode: RunQueuePrioritizationMode
+  projectName: String!
+  queueName: String!
+  resourceConfig: JSONString!
+  resourceType: String!
+  templateVariables: JSONString
+}
+
+type UpsertRunQueuePayload {
+  clientMutationId: String
+  configSchemaValidationErrors: [String!]
+  success: Boolean
+}
+
+input UpsertSharedViewInput {
+  clientMutationId: String
+  description: String
+  entityName: String!
+  name: String!
+  spec: String!
+  type: String!
+}
+
+type UpsertSharedViewPayload {
+  clientMutationId: String
+  view: View
+}
+
+input UpsertSweepInput {
+  clientMutationId: String
+  config: String
+  controller: JSONString
+  description: String
+  displayName: String
+  entityName: String
+  id: ID
+  launchScheduler: JSONString
+  priorRunsFilters: JSONString
+  projectName: String
+  scheduler: JSONString
+  state: String
+  templateVariableValues: JSONString
+}
+
+type UpsertSweepPayload {
+  clientMutationId: String
+  configValidationWarnings: [String!]!
+  inserted: Boolean
+  insertedPriorRuns: Int
+  sweep: Sweep
+}
+
+input UpsertViewInput {
+  clientMutationId: String
+  coverUrl: String
+  createdUsing: ViewSource
+  description: String
+  displayName: String
+  entityName: String
+  id: ID
+  locked: Boolean
+  name: String
+  parentId: ID
+  previewUrl: String
+  projectName: String
+  showcasedAt: DateTime
+  spec: String
+  specIsGzipped: Boolean
+  type: String
+}
+
+type UpsertViewPayload {
+  clientMutationId: String
+  inserted: Boolean
+  view: View
+}
+
+type UsageAggregation {
+  end: DateTime!
+  entityName: String!
+  projectName: String!
+  start: DateTime!
+  value: Int64!
+}
+
+type UsageStat {
+  date: DateTime
+  stat: Float
+}
+
+type UsageStatConnection {
+  edges: [UsageStatEdge!]!
+  pageInfo: PageInfo!
+}
+
+type UsageStatEdge {
+  cursor: String!
+  node: UsageStat!
+}
+
+enum UsageType {
+  STORAGE
+  TRACKED_HOURS
+  WEAVE
+  USER_SEATS
+}
+
+type UseArtifactAction implements ArtifactAction {
+  artifact: Artifact!
+  createdAt: DateTime!
+  id: ID!
+  initiator: Initiator!
+}
+
+input UseArtifactInput {
+  artifactID: ID!
+  clientMutationId: String
+  entityName: String!
+  projectName: String!
+  runName: String!
+  usedAs: String
+}
+
+type UseArtifactPayload {
+  artifact: Artifact!
+  clientMutationId: String
+  run: Run!
+}
+
+type User implements Node {
+  accountType: UserAccountType
+  activity: UserActivityDetails
+  admin: Boolean
+  analyticsId: String
+  apiKey: String
+  apiKeys(after: String, batchSize: Int, before: String, first: Int, keysOnly: Boolean, last: Int, pageSize: Int): ApiKeyConnection
+  authId: String @deprecated
+  code: String
+  createdAt: DateTime!
+  dailyRunCount(limit: Int!): [Int!]!
+  defaultEntity: Entity
+  defaultEntityId: Int
+  defaultFramework: String
+  deletedAt: DateTime
+  domainClaimBlockingReason(orgId: ID!): String
+  email: String
+  emails: [Email!]!
+  entity: String
+  featureFlags(featureKey: String, rampIDType: RampIDType!): [FeatureFlag]!
+  flags: JSONString
+  hasRun: Boolean!
+  hideTeamsFromPublic: Boolean!
+  id: ID!
+  instanceAdminTeamAccessDisabled: Boolean!
+  isEmailDomainClaimedAndShouldRedirectToSSO: Boolean!
+  limits: JSON
+  loggedInAt: DateTime
+  name: String!
+  ndbId: ID @deprecated
+  newsletterSubscription: NewsletterSubscription
+  onboardingSteps: JSON
+  organizations(emailDomain: String): [Organization!]!
+  personalEntityDisabled: Boolean!
+  photoUploadUrl: String!
+  photoUrl: String
+  private: Boolean!
+  projects(
+    after: String
+    before: String
+    first: Int
+    last: Int
+
+    """deprecated"""
+    linkedBenchmark: ProjectIdentifierInput
+    order: String
+    pattern: String
+
+    """option: last_active, id, created_at"""
+    restrictTo: UserProjectRestriction = OWNED
+  ): ProjectConnection
+  runs(after: String, before: String, first: Int, last: Int, order: String, pattern: String): RunConnection
+  signupRequired: Boolean!
+  starredProjects(after: String, before: String, first: Int, last: Int, order: String): ProjectConnection
+  starredViews(after: String, before: String, first: Int, last: Int): ViewConnection
+  stripeCustomerId: String
+  teams(after: String, before: String, first: Int, last: Int): EntityConnection
+  totalRuns: Int!
+  updatedAt: DateTime
+  uploadHeaders: [String!]!
+  userEntity: Entity
+  userInfo: JSON
+  username: String
+  views(after: String, before: String, first: Int, last: Int, viewType: String): ViewConnection
+}
+
+enum UserAccountType {
+  USER
+  SERVICE
+  ORG_SERVICE
+  ANONYMOUS
+  VIEWER
+}
+
+type UserActivityDetails implements ActivityDuration {
+  daysActive: Int!
+
+  """start time for activity"""
+  endAt: DateTime!
+  lastActiveAt: DateTime
+  numReports: Int!
+  numRuns: Int!
+  startAt: DateTime!
+}
+
+type UserConnection {
+  edges: [UserEdge!]!
+  pageInfo: PageInfo!
+}
+
+type UserEdge {
+  cursor: String!
+  node: User
+}
+
+"""deprecated"""
+enum UserProjectRestriction {
+  OWNED
+  CONTRIBUTED
+}
+
+type Variant {
+  allocation: Int!
+  bucket: Int!
+  description: String!
+}
+
+input VariantInput {
+  allocation: Int!
+  bucket: Int!
+  description: String!
+}
+
+type VersionedArtifactConnection implements ArtifactConnectionType {
+  edges: [VersionedArtifactEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type VersionedArtifactEdge implements ArtifactEdgeType {
+  cursor: String!
+  node: Artifact!
+  version: String!
+}
+
+type View implements Node {
+  accessTokens: [AccessToken!]!
+  alertSubscription: AlertSubscription
+  children: ViewConnection
+  coverUrl: String
+  createdAt: DateTime!
+  createdUsing: ViewSource!
+  description: String
+  discussionThreads(after: String, before: String, first: Int, last: Int): DiscussionThreadConnection!
+  displayName: String
+  entity: Entity
+  entityName: String!
+  id: ID!
+  imageUploadUrl(name: String!): ImageUrl!
+  locked: Boolean!
+  name: String
+  parentId: ID
+  previewUrl: String
+  project: Project
+  projectId: Int
+  projectName: String!
+  showcasedAt: DateTime
+  spec: JSONString
+  specObject: JSON
+  starCount(from: DateTime, to: DateTime): Int!
+  stargazers(after: String, before: String, first: Int, last: Int): StargazerConnection!
+  starred: Boolean
+  type: String
+  updatedAt: DateTime
+  updatedBy: User
+  uploadHeaders: [String!]!
+  user: User
+  userId: Int
+  viewCount: Int!
+}
+
+type ViewConnection {
+  edges: [ViewEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type ViewEdge {
+  cursor: String!
+  node: View
+}
+
+enum ViewSource {
+  WANDB_UI
+  WANDB_UI_SHARE_PANEL
+  WANDB_SDK
+  WEAVE_UI
+}
+
+input ViewViewInput {
+  clientMutationId: String
+  id: ID!
+}
+
+type ViewViewPayload {
+  clientMutationId: String
+  success: Boolean
+}
+
+type WeaveLimits {
+  weaveLimitBytes: Int64
+  weaveOverageCostCents: Int
+  weaveOverageUnit: StorageUnit
+}
+
+enum WorkflowsAdminType {
+  MODEL
+}

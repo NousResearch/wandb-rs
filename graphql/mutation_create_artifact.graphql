@@ -1,0 +1,27 @@
+fragment CreatedArtifact on CreateArtifactPayload {
+    artifact {
+        id
+        state
+        artifactSequence {
+            latestArtifact {
+                id
+            }
+        }
+    }
+}
+
+# These are "required" fields in practice, even if they're formally optional in the input schema
+# @genqlient(for: "CreateArtifactInput.artifactCollectionName", pointer: false)
+# @genqlient(for: "CreateArtifactInput.enableDigestDeduplication", pointer: false)
+# @genqlient(for: "CreateArtifactInput.clientID", pointer: false)
+# @genqlient(for: "CreateArtifactInput.sequenceClientID", pointer: false)
+#
+# CreateArtifactInput.tags added in server version: 0.58
+# @genqlient(for: "CreateArtifactInput.tags", omitempty: true)
+mutation CreateArtifact(
+    $input: CreateArtifactInput!
+) {
+    createArtifact(input: $input) {
+        ...CreatedArtifact
+    }
+}

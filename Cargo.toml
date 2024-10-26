@@ -1,0 +1,19 @@
+[package]
+name = "wandb"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+base64 = "0.22.1"
+env_logger = "0.11.5"
+graphql_client = "0.14.0"
+impl_from_tuple = { path = "./impl_from_tuple" }
+reqwest = { version = "0.12.8", features = ["json"] }
+serde = { version = "1.0.213", features = ["derive"] }
+serde_json = "1.0.132"
+thiserror = "1.0.65"
+tokio = "1.41.0"
+tracing = "0.1.40"
+
+[dev-dependencies]
+tokio = { version = "1.41.0", features = ["macros", "rt", "rt-multi-thread"] }
