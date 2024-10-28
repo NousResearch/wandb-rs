@@ -26,8 +26,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         )
         .await?;
     for i in 0..100 {
-        run.log((("_step", i), ("loss", 1.0 / (i as f64).sqrt())))
-            .await;
+        run.log((
+            ("_step", i),
+            ("loss", 1.0 / (i as f64).sqrt()),
+            ("hellaswag", i as f64 % 100.0),
+        ))
+        .await;
         tokio::time::sleep(Duration::from_millis(100)).await;
     }
     Ok(())
