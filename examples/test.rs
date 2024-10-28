@@ -1,4 +1,4 @@
-use std::env;
+use std::{env, time::Duration};
 
 use wandb::{BackendOptions, RunInfo, WandB};
 
@@ -21,13 +21,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     ("bees", 150),
                     ("go crazy?", true),
                     ("favorite fish", "white tuna"),
-                ))?
-                .build(),
+                ))
+                .build()?,
         )
         .await?;
     for i in 0..100 {
         run.log((("_step", i), ("loss", 1.0 / (i as f64).sqrt())))
             .await;
+        tokio::time::sleep(Duration::from_millis(100)).await;
     }
     Ok(())
 }

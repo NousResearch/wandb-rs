@@ -2,11 +2,10 @@ use std::{fmt::Display, future::Future};
 
 use base64::{prelude::BASE64_STANDARD as base64, Engine};
 use data_value::LogData;
-use gql::UpsertBucket;
+use gql::{upsert_bucket, UpsertBucket};
 use graphql_client::GraphQLQuery;
 use run::Run;
 
-pub use gql::upsert_bucket;
 mod data_value;
 mod gql;
 mod run;
@@ -21,7 +20,7 @@ pub struct RunInfo {
     project: String,
     entity: Option<String>,
     name: Option<String>,
-    config: Option<String>,
+    config: Option<LogData>,
     commit: Option<String>,
 }
 
@@ -33,37 +32,32 @@ impl RunInfo {
         }
     }
 
-    // Setter methods for the fields
-
     pub fn entity(mut self, entity: impl Into<String>) -> Self {
         self.entity = Some(entity.into());
-
         self
     }
 
     pub fn name(mut self, name: impl Into<String>) -> Self {
         self.name = Some(name.into());
-
         self
     }
     pub fn commit(mut self, commit: impl Into<String>) -> Self {
         self.commit = Some(commit.into());
-
         self
     }
 
-    pub fn config(mut self, config: impl Into<LogData>) -> Result<Self, ApiError> {
-        self.config = Some(serde_json::to_string(&config.into())?);
-
-        Ok(self)
+    pub fn config(mut self, config: impl Into<LogData>) -> Self {
+        self.config = Some(config.into());
+        self
     }
 
-    pub fn build(self) -> upsert_bucket::Variables {
-        upsert_bucket::Variables {
+    pub fn build(self) -> Result<upsert_bucket::Variables, serde_json::Error> {
+        let config = self.config.map(|c| serde_json::to_string(&c)).transpose()?;
+        Ok(upsert_bucket::Variables {
             entity: self.entity,
             name: self.name,
             commit: self.commit,
-            config: self.config,
+            config: config,
             project: self.project.into(),
             id: None,
             debug: None,
@@ -79,7 +73,7 @@ impl RunInfo {
             summary_metrics: None,
             sweep: None,
             tags: None,
-        }
+        })
     }
 }
 
