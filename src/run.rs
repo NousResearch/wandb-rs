@@ -134,11 +134,12 @@ impl Run {
     ///
     /// ```
     /// // Example: log an "epoch" metric for use as an X axis.
-    /// run.log((("epoch", 40), ("train-loss", 0.5)));
+    /// run.log((
+    ///     ("epoch", 40),
+    ///     ("train-loss", 0.5)
+    /// ));
     /// ```
-
     /// See also [define_metric](https://docs.wandb.ai/ref/python/run#define_metric).
-
     pub async fn log(&self, row: impl Into<LogData>) {
         // hack to prevent nasty monomorphization blowup -
         // only the .into() is monomorphized, the rest is not.

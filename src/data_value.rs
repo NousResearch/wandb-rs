@@ -7,6 +7,7 @@ use serde::{ser::SerializeMap, Serialize, Serializer};
 pub enum DataValue {
     Bool(bool),
     Int(u64),
+    SignedInt(i64),
     Float(f64),
     String(String),
     List(Vec<DataValue>),
@@ -24,10 +25,51 @@ impl From<u64> for DataValue {
         DataValue::Int(v)
     }
 }
+impl From<u32> for DataValue {
+    fn from(v: u32) -> Self {
+        DataValue::Int(v.into())
+    }
+}
+impl From<u16> for DataValue {
+    fn from(v: u16) -> Self {
+        DataValue::Int(v.into())
+    }
+}
+impl From<u8> for DataValue {
+    fn from(v: u8) -> Self {
+        DataValue::Int(v.into())
+    }
+}
+
+impl From<i64> for DataValue {
+    fn from(v: i64) -> Self {
+        DataValue::SignedInt(v)
+    }
+}
+impl From<i32> for DataValue {
+    fn from(v: i32) -> Self {
+        DataValue::SignedInt(v.into())
+    }
+}
+impl From<i16> for DataValue {
+    fn from(v: i16) -> Self {
+        DataValue::SignedInt(v.into())
+    }
+}
+impl From<i8> for DataValue {
+    fn from(v: i8) -> Self {
+        DataValue::SignedInt(v.into())
+    }
+}
 
 impl From<f64> for DataValue {
     fn from(v: f64) -> Self {
         DataValue::Float(v)
+    }
+}
+impl From<f32> for DataValue {
+    fn from(v: f32) -> Self {
+        DataValue::Float(v.into())
     }
 }
 
@@ -104,6 +146,7 @@ impl Serialize for DataValue {
         match self {
             DataValue::Bool(b) => serializer.serialize_bool(*b),
             DataValue::Int(i) => serializer.serialize_u64(*i),
+            DataValue::SignedInt(i) => serializer.serialize_i64(*i),
             DataValue::Float(f) => serializer.serialize_f64(*f),
             DataValue::String(s) => serializer.serialize_str(s),
             DataValue::List(l) => l.serialize(serializer),
