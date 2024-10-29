@@ -3,7 +3,7 @@ use std::{fmt::Display, future::Future};
 use base64::{prelude::BASE64_STANDARD as base64, Engine};
 use gql::{upsert_bucket, UpsertBucket};
 use graphql_client::GraphQLQuery;
-pub use data_value::LogData;
+pub use data_value::{DataValue, LogData};
 pub use run::Run;
 
 mod data_value;
