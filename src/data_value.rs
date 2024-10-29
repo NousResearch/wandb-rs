@@ -20,6 +20,11 @@ impl From<bool> for DataValue {
     }
 }
 
+impl From<usize> for DataValue {
+    fn from(v: usize) -> Self {
+        DataValue::Int(v as u64)
+    }
+}
 impl From<u64> for DataValue {
     fn from(v: u64) -> Self {
         DataValue::Int(v)
@@ -41,6 +46,11 @@ impl From<u8> for DataValue {
     }
 }
 
+impl From<isize> for DataValue {
+    fn from(v: isize) -> Self {
+        DataValue::SignedInt(v as i64)
+    }
+}
 impl From<i64> for DataValue {
     fn from(v: i64) -> Self {
         DataValue::SignedInt(v)
