@@ -130,7 +130,7 @@ impl_from_tuple! { A B C D E F G H I J K L M N O }
 impl_from_tuple! { A B C D E F G H I J K L M N O P }
 // lmnop should be enough :)
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Default, Debug, Clone, PartialEq)]
 pub struct LogData {
     data: HashMap<String, DataValue>,
 }
