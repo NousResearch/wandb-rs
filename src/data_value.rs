@@ -135,6 +135,17 @@ pub struct LogData {
     data: HashMap<String, DataValue>,
 }
 
+impl LogData {
+    pub fn new() -> Self {
+        Self {
+            data: HashMap::new(),
+        }
+    }
+
+    pub fn insert(&mut self, key: impl Into<String>, value: impl Into<DataValue>) {
+        self.data.insert(key.into(), value.into());
+    }
+}
 impl Serialize for LogData {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
