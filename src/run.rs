@@ -57,14 +57,13 @@ impl Run {
                         .collect(),
                     };
 
-                    let x = client
+                    let _ = client
                         .post(&run_path)
                         .json(&log)
                         .send()
                         .await?
                         .text()
                         .await?;
-                    dbg!(x);
                     step += 1;
                 } else {
                     break;
