@@ -10,7 +10,7 @@ let run = wandb
         RunInfo::new("wandb-rs")
             .entity("nous_research")
             .name("node-25")
-            .build(),
+            .build()?,
     )
     .await?;
 
