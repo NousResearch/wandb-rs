@@ -1,9 +1,9 @@
 use std::{fmt::Display, future::Future};
 
 use base64::{prelude::BASE64_STANDARD as base64, Engine};
-use data_value::LogData;
 use gql::{upsert_bucket, UpsertBucket};
 use graphql_client::GraphQLQuery;
+pub use data_value::LogData;
 pub use run::Run;
 
 mod data_value;
