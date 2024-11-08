@@ -2,12 +2,12 @@ use std::collections::HashMap;
 
 use serde::Serialize;
 use tokio::{sync::mpsc, task::JoinHandle};
-use tracing::warn;
+use tracing::{error, info, warn};
 
-use crate::{data_value::LogData, ApiError};
+use crate::{data_value::LogData, ApiError, ReqwestBadResponse};
 
 pub struct Run {
-    tx_log_data: mpsc::Sender<LogData>,
+    tx_log_data: mpsc::Sender<RunMessage>,
 }
 
 #[derive(Debug, Serialize)]
@@ -21,6 +21,49 @@ struct FsFilesData {
     files: HashMap<String, FsChunkData>,
 }
 
+async fn submit_log(
+    client: &reqwest::Client,
+    run_path: &str,
+    step: u64,
+    row: LogData,
+) -> Result<(), ApiError> {
+    let row_string = serde_json::to_string(&row)?;
+    let log = FsFilesData {
+        files: [
+            (
+                "wandb-history.jsonl".to_string(),
+                FsChunkData {
+                    content: vec![row_string.clone()],
+                    offset: step,
+                },
+            ),
+            (
+                "wandb-summary.json".to_string(),
+                FsChunkData {
+                    content: vec![row_string.clone()],
+                    offset: 0,
+                },
+            ),
+        ]
+        .into_iter()
+        .collect(),
+    };
+
+    client
+        .post(run_path)
+        .json(&log)
+        .send()
+        .await?
+        .maybe_err()
+        .await?;
+    Ok(())
+}
+
+enum RunMessage {
+    // TODO: add FinishRun
+    LogData(LogData),
+}
+
 impl Run {
     pub fn new(
         base_url: String,
@@ -29,48 +72,24 @@ impl Run {
         project: String,
         name: String,
     ) -> Run {
-        let (tx_log_data, mut rx_log_data) = mpsc::channel::<LogData>(10);
-        let _: JoinHandle<Result<(), ApiError>> = tokio::spawn(async move {
+        let (tx_log_data, mut rx_log_data) = mpsc::channel::<RunMessage>(10);
+        let log_thread: JoinHandle<Result<(), ApiError>> = tokio::spawn(async move {
             let run_path = format!("{base_url}/files/{entity}/{project}/{name}/file_stream");
             let mut step = 0;
-            loop {
-                if let Some(row) = rx_log_data.recv().await {
-                    let row_string = serde_json::to_string(&row)?;
-                    let log = FsFilesData {
-                        files: [
-                            (
-                                "wandb-history.jsonl".to_string(),
-                                FsChunkData {
-                                    content: vec![row_string.clone()],
-                                    offset: step,
-                                },
-                            ),
-                            (
-                                "wandb-summary.json".to_string(),
-                                FsChunkData {
-                                    content: vec![row_string.clone()],
-                                    offset: 0,
-                                },
-                            ),
-                        ]
-                        .into_iter()
-                        .collect(),
-                    };
-
-                    let _ = client
-                        .post(&run_path)
-                        .json(&log)
-                        .send()
-                        .await?
-                        .text()
-                        .await?;
-                    step += 1;
-                } else {
-                    break;
+            while let Some(message) = rx_log_data.recv().await {
+                match message {
+                    RunMessage::LogData(row) => {
+                        if let Err(log_error) = submit_log(&client, &run_path, step, row).await {
+                            error!("Failed to log row to WandB for step {step}: {log_error}");
+                        }
+                    }
                 }
+                step += 1;
             }
+            info!("WandB run {name} ended.");
             Ok(())
         });
+        drop(log_thread);
         Run { tx_log_data }
     }
 
@@ -146,7 +165,7 @@ impl Run {
         self._log(row.into()).await
     }
     async fn _log(&self, row: LogData) {
-        if let Err(e) = self.tx_log_data.send(row).await {
+        if let Err(e) = self.tx_log_data.send(RunMessage::LogData(row)).await {
             warn!("Failed to send log data to wandb: {}", e);
         }
     }

@@ -1,9 +1,9 @@
 use std::{fmt::Display, future::Future};
 
 use base64::{prelude::BASE64_STANDARD as base64, Engine};
+pub use data_value::{DataValue, LogData};
 use gql::{upsert_bucket, UpsertBucket};
 use graphql_client::GraphQLQuery;
-pub use data_value::{DataValue, LogData};
 pub use run::Run;
 
 mod data_value;
@@ -57,7 +57,7 @@ impl RunInfo {
             entity: self.entity,
             name: self.name,
             commit: self.commit,
-            config: config,
+            config,
             project: self.project.into(),
             id: None,
             debug: None,
