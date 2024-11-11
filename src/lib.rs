@@ -22,6 +22,8 @@ pub struct RunInfo {
     name: Option<String>,
     config: Option<LogData>,
     commit: Option<String>,
+    group: Option<String>,
+    host: Option<String>,
 }
 
 impl RunInfo {
@@ -46,6 +48,16 @@ impl RunInfo {
         self
     }
 
+    pub fn group(mut self, group: impl Into<String>) -> Self {
+        self.group = Some(group.into());
+        self
+    }
+
+    pub fn host(mut self, host: impl Into<String>) -> Self {
+        self.host = Some(host.into());
+        self
+    }
+
     pub fn config(mut self, config: impl Into<LogData>) -> Self {
         self.config = Some(config.into());
         self
@@ -63,8 +75,8 @@ impl RunInfo {
             debug: None,
             description: None,
             display_name: None,
-            group_name: None,
-            host: None,
+            group_name: self.group,
+            host: self.host,
             job_type: None,
             notes: None,
             program: None,
