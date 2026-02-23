@@ -145,6 +145,12 @@ impl LogData {
     pub fn insert(&mut self, key: impl Into<String>, value: impl Into<DataValue>) {
         self.data.insert(key.into(), value.into());
     }
+
+    /// Insert a value only if the key is not already present,
+    /// allowing user-provided values to take precedence.
+    pub fn insert_default(&mut self, key: impl Into<String>, value: impl Into<DataValue>) {
+        self.data.entry(key.into()).or_insert_with(|| value.into());
+    }
 }
 impl Serialize for LogData {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
