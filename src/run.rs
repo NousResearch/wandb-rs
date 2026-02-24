@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::time::SystemTime;
 
 use serde::Serialize;
 use tokio::{sync::mpsc, task::JoinHandle};
@@ -20,6 +21,8 @@ struct FsChunkData {
 struct FsFilesData {
     files: HashMap<String, FsChunkData>,
 }
+
+const TIMESTAMP_METRIC_NAME: &str = "_timestamp";
 
 async fn submit_log(
     client: &reqwest::Client,
@@ -61,7 +64,7 @@ async fn submit_log(
 
 enum RunMessage {
     // TODO: add FinishRun
-    LogData(LogData),
+    LogData { log_data: LogData, timestamp: f64 },
 }
 
 impl Run {
@@ -78,8 +81,14 @@ impl Run {
             let mut step = 0;
             while let Some(message) = rx_log_data.recv().await {
                 match message {
-                    RunMessage::LogData(row) => {
-                        if let Err(log_error) = submit_log(&client, &run_path, step, row).await {
+                    RunMessage::LogData {
+                        mut log_data,
+                        timestamp,
+                    } => {
+                        log_data.insert_default(TIMESTAMP_METRIC_NAME, timestamp);
+
+                        if let Err(log_error) = submit_log(&client, &run_path, step, log_data).await
+                        {
                             error!("Failed to log row to WandB for step {step}: {log_error}");
                         }
                     }
@@ -165,8 +174,23 @@ impl Run {
         self._log(row.into()).await
     }
     async fn _log(&self, row: LogData) {
-        if let Err(e) = self.tx_log_data.send(RunMessage::LogData(row)).await {
+        if let Err(e) = self
+            .tx_log_data
+            .send(RunMessage::LogData {
+                log_data: row,
+                timestamp: current_timestamp(),
+            })
+            .await
+        {
             warn!("Failed to send log data to wandb: {}", e);
         }
     }
+}
+
+/// Get the current time in UNIX seconds
+fn current_timestamp() -> f64 {
+    SystemTime::now()
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .expect("System time was before the UNIX epoch")
+        .as_secs_f64()
 }
