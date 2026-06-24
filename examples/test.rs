@@ -34,5 +34,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .await;
         tokio::time::sleep(Duration::from_millis(100)).await;
     }
+    run.finish().await?;
     Ok(())
 }
