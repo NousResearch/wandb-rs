@@ -18,6 +18,10 @@ for i in 0..100 {
     run.log((("_step", i), ("loss", 1.0 / (i as f64).sqrt())))
         .await;
 }
+
+// log() only enqueues rows; flush them before exiting or the most
+// recent ones are dropped when the runtime shuts down.
+run.finish().await?;
 ```
 
 see `examples/test.rs` for an example :)

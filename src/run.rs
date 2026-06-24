@@ -8,7 +8,8 @@ use tracing::{error, info, warn};
 use crate::{data_value::LogData, ApiError, ReqwestBadResponse};
 
 pub struct Run {
-    tx_log_data: mpsc::Sender<RunMessage>,
+    tx_log_data: Option<mpsc::Sender<RunMessage>>,
+    log_thread: Option<JoinHandle<Result<(), ApiError>>>,
 }
 
 #[derive(Debug, Serialize)]
@@ -98,8 +99,10 @@ impl Run {
             info!("WandB run {name} ended.");
             Ok(())
         });
-        drop(log_thread);
-        Run { tx_log_data }
+        Run {
+            tx_log_data: Some(tx_log_data),
+            log_thread: Some(log_thread),
+        }
     }
 
     /// Upload run data.
@@ -174,8 +177,11 @@ impl Run {
         self._log(row.into()).await
     }
     async fn _log(&self, row: LogData) {
-        if let Err(e) = self
-            .tx_log_data
+        let Some(tx) = self.tx_log_data.as_ref() else {
+            warn!("log called after finish(); dropping row");
+            return;
+        };
+        if let Err(e) = tx
             .send(RunMessage::LogData {
                 log_data: row,
                 timestamp: current_timestamp(),
@@ -183,6 +189,29 @@ impl Run {
             .await
         {
             warn!("Failed to send log data to wandb: {}", e);
+        }
+    }
+
+    /// Flush any pending log messages and wait for the background upload task
+    /// to finish.
+    ///
+    /// `log` only enqueues a row; the actual upload happens on a background
+    /// task. If the program exits before that task drains the queue, the most
+    /// recent rows are silently dropped. Call `finish().await` before exiting
+    /// to make sure everything has been sent.
+    pub async fn finish(mut self) -> Result<(), ApiError> {
+        // Dropping the sender closes the channel, so the background task's
+        // recv() loop ends once the buffered messages have been drained.
+        self.tx_log_data.take();
+        match self.log_thread.take() {
+            Some(handle) => match handle.await {
+                Ok(result) => result,
+                Err(join_error) => {
+                    error!("wandb log task failed to join: {join_error}");
+                    Ok(())
+                }
+            },
+            None => Ok(()),
         }
     }
 }
