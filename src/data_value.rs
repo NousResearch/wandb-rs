@@ -193,9 +193,12 @@ mod test {
     use super::*;
     #[test]
     fn test_from_tuple() {
+        // An unsuffixed integer literal falls back to i32, so it arrives as a
+        // SignedInt. Only an explicitly unsigned one becomes an Int.
         let data: LogData = (
             ("bool", true),
             ("int", 1),
+            ("uint", 1u64),
             ("float", 2.0),
             ("string", "three"),
             ("vec_int", vec![4, 5]),
@@ -213,12 +216,13 @@ mod test {
             LogData {
                 data: HashMap::from([
                     ("bool".to_string(), DataValue::Bool(true)),
-                    ("int".to_string(), DataValue::Int(1)),
+                    ("int".to_string(), DataValue::SignedInt(1)),
+                    ("uint".to_string(), DataValue::Int(1)),
                     ("float".to_string(), DataValue::Float(2.0)),
                     ("string".to_string(), DataValue::String("three".to_string())),
                     (
                         "vec_int".to_string(),
-                        DataValue::List(vec![DataValue::Int(4), DataValue::Int(5)])
+                        DataValue::List(vec![DataValue::SignedInt(4), DataValue::SignedInt(5)])
                     ),
                     (
                         "vec_string".to_string(),
@@ -230,8 +234,8 @@ mod test {
                     (
                         "hashmap_int".to_string(),
                         DataValue::Dict(HashMap::from([
-                            ("eight".to_string(), DataValue::Int(8)),
-                            ("nine".to_string(), DataValue::Int(9))
+                            ("eight".to_string(), DataValue::SignedInt(8)),
+                            ("nine".to_string(), DataValue::SignedInt(9))
                         ]))
                     ),
                 ])

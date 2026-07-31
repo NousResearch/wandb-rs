@@ -137,7 +137,7 @@ impl Run {
     /// into sections named using the text before the final slash. For example,
     /// the following results in two sections named "train" and "validate":
     ///
-    /// ```
+    /// ```ignore
     /// run.log((
     ///     ("train/accuracy", 0.9),
     ///     ("train/loss", 30),
@@ -163,7 +163,7 @@ impl Run {
     /// In many cases, it is better to treat the W&B step like
     /// you'd treat a timestamp rather than a training step.
     ///
-    /// ```
+    /// ```ignore
     /// // Example: log an "epoch" metric for use as an X axis.
     /// run.log((
     ///     ("epoch", 40),
