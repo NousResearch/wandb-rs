@@ -217,12 +217,19 @@ impl WandB {
                 "UpsertBucket query returned data with no project in bucket".into(),
             )
         })?;
+        // upsertBucket is an upsert, so a run name that already exists resolves
+        // to the existing run rather than a new one. Its history file is
+        // already `historyLineCount` lines long, and the file stream addresses
+        // lines by absolute offset, so start writing after them instead of back
+        // at line 0. Absent for a run that was just created.
+        let start_offset = bucket.history_line_count.unwrap_or(0).max(0) as u64;
         Ok(Run::new(
             self.base_url.clone(),
             self.client.clone(),
             project.entity.name,
             project.name,
             bucket.name,
+            start_offset,
         ))
     }
 }
@@ -239,5 +246,154 @@ impl BackendOptions {
             base_url: DEFAULT_API_URL.into(),
             api_key,
         }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use std::io::{BufRead, BufReader, Read, Write};
+    use std::net::{TcpListener, TcpStream};
+    use std::sync::{Arc, Mutex};
+
+    /// Every (path, body) the mock backend was sent.
+    type Requests = Arc<Mutex<Vec<(String, String)>>>;
+
+    /// Answer /graphql with the canned reply and everything else with 200 {},
+    /// recording every (path, body), until the client hangs up.
+    fn serve(stream: TcpStream, graphql_reply: String, requests: Requests) {
+        let mut writer = stream.try_clone().expect("clone stream");
+        let mut reader = BufReader::new(stream);
+        loop {
+            let mut request_line = String::new();
+            if matches!(reader.read_line(&mut request_line), Ok(0) | Err(_)) {
+                return;
+            }
+            let path = request_line
+                .split_whitespace()
+                .nth(1)
+                .unwrap_or_default()
+                .to_string();
+
+            let mut content_length = 0;
+            loop {
+                let mut line = String::new();
+                if matches!(reader.read_line(&mut line), Ok(0) | Err(_)) {
+                    return;
+                }
+                if line.trim_end().is_empty() {
+                    break;
+                }
+                let line = line.to_ascii_lowercase();
+                if let Some(value) = line.strip_prefix("content-length:") {
+                    content_length = value.trim().parse().unwrap_or(0);
+                }
+            }
+
+            let mut body = vec![0; content_length];
+            if reader.read_exact(&mut body).is_err() {
+                return;
+            }
+            let reply = if path == "/graphql" {
+                graphql_reply.clone()
+            } else {
+                "{}".to_string()
+            };
+            // Record before answering so that a client which has seen its
+            // response can rely on the request already being here.
+            requests
+                .lock()
+                .expect("lock requests")
+                .push((path, String::from_utf8_lossy(&body).into_owned()));
+
+            let response = format!(
+                "HTTP/1.1 200 OK\r\ncontent-type: application/json\r\ncontent-length: {}\r\n\r\n{}",
+                reply.len(),
+                reply
+            );
+            if writer.write_all(response.as_bytes()).is_err() {
+                return;
+            }
+        }
+    }
+
+    fn mock_backend(graphql_reply: String) -> (String, Requests) {
+        let listener = TcpListener::bind("127.0.0.1:0").expect("bind listener");
+        let base_url = format!("http://{}", listener.local_addr().expect("listener addr"));
+        let requests = Arc::new(Mutex::new(Vec::new()));
+
+        let recorded = Arc::clone(&requests);
+        std::thread::spawn(move || {
+            for stream in listener.incoming().flatten() {
+                let recorded = Arc::clone(&recorded);
+                let graphql_reply = graphql_reply.clone();
+                std::thread::spawn(move || serve(stream, graphql_reply, recorded));
+            }
+        });
+
+        (base_url, requests)
+    }
+
+    /// An upsertBucket reply for a run whose history file is already
+    /// `history_line_count` lines long. The field is nullable, so pass "null"
+    /// for the case where the server reports no count at all.
+    fn upsert_reply(history_line_count: &str) -> String {
+        format!(
+            r#"{{"data":{{"upsertBucket":{{"bucket":{{
+                "id":"cnVuOjE=",
+                "name":"node-25",
+                "displayName":"node-25",
+                "description":null,
+                "config":null,
+                "sweepName":null,
+                "project":{{"id":"cHJvajoy","name":"project","entity":{{"id":"ZW50OjM=","name":"entity"}}}},
+                "historyLineCount":{history_line_count}
+            }},"inserted":false}}}}}}"#
+        )
+    }
+
+    /// Create a run against the mock, log one row, and report the offset the
+    /// row was written at.
+    async fn first_history_offset(history_line_count: &str) -> u64 {
+        let (base_url, requests) = mock_backend(upsert_reply(history_line_count));
+        let wandb = WandB {
+            client: reqwest::Client::new(),
+            base_url,
+        };
+
+        let run = wandb
+            .new_run(
+                RunInfo::new("project")
+                    .name("node-25")
+                    .build()
+                    .expect("build run info"),
+            )
+            .await
+            .expect("create run");
+        run.log((("loss", 0.5),)).await;
+        run.finish().await.expect("finish run");
+
+        let requests = requests.lock().expect("lock requests");
+        let (path, body) = requests
+            .iter()
+            .find(|(path, _)| path.ends_with("/file_stream"))
+            .expect("a file stream request");
+        assert_eq!(path, "/files/entity/project/node-25/file_stream");
+
+        let logged: serde_json::Value = serde_json::from_str(body).expect("file stream body");
+        logged["files"]["wandb-history.jsonl"]["offset"]
+            .as_u64()
+            .expect("history offset")
+    }
+
+    #[tokio::test]
+    async fn resuming_a_run_appends_after_its_existing_history() {
+        // The run already holds lines 0..3999, so the next one is line 4000.
+        assert_eq!(first_history_offset("4000").await, 4000);
+    }
+
+    #[tokio::test]
+    async fn a_new_run_starts_at_the_first_line() {
+        assert_eq!(first_history_offset("null").await, 0);
     }
 }

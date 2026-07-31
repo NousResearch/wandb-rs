@@ -69,17 +69,21 @@ enum RunMessage {
 }
 
 impl Run {
+    /// `start_offset` is the line the run's history file has already reached,
+    /// i.e. the line this run should write next. It is 0 for a new run. See
+    /// [`crate::WandB::new_run`], which reads it back from the server.
     pub fn new(
         base_url: String,
         client: reqwest::Client,
         entity: String,
         project: String,
         name: String,
+        start_offset: u64,
     ) -> Run {
         let (tx_log_data, mut rx_log_data) = mpsc::channel::<RunMessage>(10);
         let log_thread: JoinHandle<Result<(), ApiError>> = tokio::spawn(async move {
             let run_path = format!("{base_url}/files/{entity}/{project}/{name}/file_stream");
-            let mut step = 0;
+            let mut step = start_offset;
             while let Some(message) = rx_log_data.recv().await {
                 match message {
                     RunMessage::LogData {
