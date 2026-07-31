@@ -240,4 +240,42 @@ impl BackendOptions {
             api_key,
         }
     }
+
+    /// Point the client at a different W&B instance, for self-hosted or
+    /// dedicated cloud deployments. Defaults to `https://api.wandb.ai`.
+    ///
+    /// This is the host the Python client takes from `WANDB_BASE_URL`, e.g.
+    /// `https://wandb.my-company.com`.
+    pub fn base_url(mut self, base_url: impl Into<String>) -> Self {
+        // Paths are appended as "/graphql" and "/files/...", so a trailing
+        // slash here would produce a doubled one.
+        self.base_url = base_url.into().trim_end_matches('/').to_string();
+        self
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn base_url_defaults_to_the_public_instance() {
+        let wandb = WandB::new(BackendOptions::new("key".into()));
+        assert_eq!(wandb.base_url, DEFAULT_API_URL);
+    }
+
+    #[test]
+    fn base_url_can_be_pointed_at_a_self_hosted_instance() {
+        let wandb =
+            WandB::new(BackendOptions::new("key".into()).base_url("https://wandb.my-company.com"));
+        assert_eq!(wandb.base_url, "https://wandb.my-company.com");
+    }
+
+    #[test]
+    fn base_url_drops_a_trailing_slash() {
+        // Otherwise the request path would come out as "...com//graphql".
+        let wandb =
+            WandB::new(BackendOptions::new("key".into()).base_url("https://wandb.my-company.com/"));
+        assert_eq!(wandb.base_url, "https://wandb.my-company.com");
+    }
 }
