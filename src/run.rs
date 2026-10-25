@@ -107,7 +107,7 @@ impl Run {
 
     /// Upload run data.
 
-    /// Use `log` to log data from runs, such as scalars, images, vereo,
+    /// Use `log` to log data from runs, such as scalars, images, video,
     /// histograms, plots, and tables.
     ///
     /// See our [guides to logging](https://docs.wandb.ai/guides/track/log) for
